@@ -603,7 +603,7 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 0 14px;
+            padding: 6px 14px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.04);
             display: flex;
             align-items: center;
@@ -615,53 +615,46 @@
         .indices-panel.india-panel  { border-left: 4px solid var(--india); }
         .indices-panel.metals-panel { border-left: 4px solid #d97706; }
 
-        .indices-label {
-            font-family: var(--mono);
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-right: 12px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .indices-panel.us-panel     .indices-label { color: var(--us); }
-        .indices-panel.india-panel  .indices-label { color: var(--india); }
-        .indices-panel.metals-panel .indices-label { color: #d97706; }
+        .indices-label { display: none; }
 
         .indices-list {
             display: flex;
-            flex-direction: row;
-            gap: 16px;
-            align-items: center;
+            flex-direction: column;
+            gap: 3px;
+            align-items: stretch;
             flex: 1;
-            flex-wrap: nowrap;
             overflow: hidden;
         }
         .index-item {
             display: flex;
             flex-direction: row;
             align-items: baseline;
-            gap: 5px;
+            gap: 0;
             white-space: nowrap;
+        }
+        .index-name  {
+            font-family: var(--mono);
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            width: 52px;
+            min-width: 52px;
+            text-align: right;
+            margin-right: 8px;
             flex-shrink: 0;
         }
-        .index-name  { font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-        .index-price { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
+        .index-price { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); margin-right: 6px; }
         .index-chg   { font-family: var(--mono); font-size: 10px; font-weight: 500; }
         .index-chg.pos { color: var(--green); }
         .index-chg.neg { color: var(--red); }
-        .index-divider { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
+        .index-divider { display: none; }
 
         @media (max-width: 600px) {
             .indices-bar { grid-template-columns: 1fr !important; }
-            .indices-panel { height: auto; padding: 8px 14px; align-items: flex-start; }
-            .indices-list { gap: 3px; flex-wrap: wrap; overflow: visible; flex-direction: column; }
-            .index-item { flex-direction: row; white-space: nowrap; }
+            .indices-panel { height: auto; padding: 6px 14px; }
             .index-chg { font-size: 9px; }
-            .indices-label { display: none; }
-            .index-divider { display: none; }
-            .index-name { width: 52px; min-width: 52px; text-align: right; flex-shrink: 0; }
         }
     </style>
 </head>
