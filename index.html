@@ -162,6 +162,13 @@
         }
 
         .sc-stat { flex: 1; text-align: center; }
+        .sc-stat.total-pl .sc-value {
+            display: inline-block;
+            border: 1.5px solid currentColor;
+            border-radius: 4px;
+            padding: 2px 8px;
+            opacity: 0.9;
+        }
         .sc-label {
             font-family: var(--mono);
             font-size: 8px;
@@ -232,8 +239,8 @@
             letter-spacing: 0.1em;
             text-transform: uppercase;
         }
-        .region-name.us { color: var(--us); }
-        .region-name.india { color: var(--india); }
+        .region-name.us    { color: #fff; background: var(--us);    padding: 3px 10px; border-radius: 4px; }
+        .region-name.india { color: #fff; background: var(--india); padding: 3px 10px; border-radius: 4px; }
 
         .region-stats {
             margin-left: auto;
@@ -674,7 +681,7 @@
                 <div class="sc-value" id="usTodayPnL">$–</div>
             </div>
             <div class="sc-divider"></div>
-            <div class="sc-stat">
+            <div class="sc-stat total-pl">
                 <div class="sc-label">Total P/L</div>
                 <div class="sc-value" id="usTotalPnL">$–</div>
             </div>
@@ -698,7 +705,7 @@
                 <div class="sc-value" id="indiaTodayPnL">₹–</div>
             </div>
             <div class="sc-divider"></div>
-            <div class="sc-stat">
+            <div class="sc-stat total-pl">
                 <div class="sc-label">Total P/L</div>
                 <div class="sc-value" id="indiaTotalPnL">₹–</div>
             </div>
