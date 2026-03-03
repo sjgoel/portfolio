@@ -659,8 +659,9 @@
             .indices-list { gap: 3px; flex-wrap: wrap; overflow: visible; flex-direction: column; }
             .index-item { flex-direction: row; white-space: nowrap; }
             .index-chg { font-size: 9px; }
-            .indices-label { width: 52px; min-width: 52px; margin-top: 2px; }
+            .indices-label { display: none; }
             .index-divider { display: none; }
+            .index-name { width: 52px; min-width: 52px; text-align: right; flex-shrink: 0; }
         }
     </style>
 </head>
@@ -673,9 +674,9 @@
             <div class="pulse-dot active" id="statusDot"></div>
             <span class="header-title">PORTFOLIO</span>
         </div>
+        <span class="last-update" id="lastUpdate" style="padding-left:15px;">–</span>
     </div>
     <div class="header-meta">
-        <span class="last-update" id="lastUpdate">–</span>
         <div class="countdown-bar"><div class="countdown-fill" id="countdownFill" style="width:100%"></div></div>
         <button class="btn primary" onclick="openSettings()">⚙ Manage</button>
     </div>
@@ -1367,7 +1368,7 @@ async function fetchIndexPrice(sym) {
 
 function fIndex(v, isIndia) {
     if (isIndia) return '₹' + Math.round(v).toLocaleString('en-IN');
-    return v >= 10000 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2);
+    return v >= 1000 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2);
 }
 
 async function updateIndices() {
@@ -1417,7 +1418,7 @@ async function updateIndices() {
         return `${idx > 0 ? '<div class="index-divider"></div>' : ''}
         <div class="index-item">
             <span class="index-name">${item.name}</span>
-            <span class="index-price">$${item.r.price.toFixed(2)}</span>
+            <span class="index-price">$${item.r.price >= 1000 ? item.r.price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : item.r.price.toFixed(2)}</span>
             <span class="index-chg ${cls}">${sign}$${Math.abs(chg).toFixed(2)} (${sign}${pct.toFixed(2)}%)</span>
         </div>`;
     }).join('');
