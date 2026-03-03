@@ -277,6 +277,7 @@
         @keyframes liveblink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
         .market-badge.closed   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
         .market-badge.extended { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+        .market-time { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-left: 6px; white-space: nowrap; }
 
         .table-wrap {
             background: var(--surface);
@@ -959,23 +960,67 @@ function updateSyncBanner() {
 // ─────────────────────────────────────────────
 //  MARKET STATUS
 // ─────────────────────────────────────────────
-// US market holidays 2025-2026
+// NYSE holidays 2025-2026 (official NYSE calendar)
 const US_HOLIDAYS = new Set([
-    '2025-01-01','2025-01-20','2025-02-17','2025-04-18','2025-05-26',
-    '2025-06-19','2025-07-04','2025-09-01','2025-11-27','2025-12-25',
-    '2026-01-01','2026-01-19','2026-02-16','2026-04-03','2026-05-25',
-    '2026-06-19','2026-07-03','2026-09-07','2026-11-26','2026-12-25'
+    // 2025
+    '2025-01-01', // New Year's Day
+    '2025-01-20', // MLK Day
+    '2025-02-17', // Washington's Birthday
+    '2025-04-18', // Good Friday
+    '2025-05-26', // Memorial Day
+    '2025-06-19', // Juneteenth
+    '2025-07-04', // Independence Day
+    '2025-09-01', // Labor Day
+    '2025-11-27', // Thanksgiving
+    '2025-12-25', // Christmas
+    // 2026
+    '2026-01-01', // New Year's Day
+    '2026-01-19', // MLK Day
+    '2026-02-16', // Washington's Birthday
+    '2026-04-03', // Good Friday
+    '2026-05-25', // Memorial Day
+    '2026-06-19', // Juneteenth
+    '2026-07-03', // Independence Day (observed, Jul 4 is Saturday)
+    '2026-09-07', // Labor Day
+    '2026-11-26', // Thanksgiving
+    '2026-12-25', // Christmas
 ]);
 
-// India NSE holidays 2025-2026
+// NSE/BSE holidays 2025-2026 (official NSE circular)
 const INDIA_HOLIDAYS = new Set([
-    '2025-01-26','2025-02-26','2025-03-14','2025-03-31','2025-04-10',
-    '2025-04-14','2025-04-18','2025-05-01','2025-08-15','2025-08-27',
-    '2025-10-02','2025-10-02','2025-10-20','2025-10-24','2025-11-05',
-    '2025-12-25',
-    '2026-01-26','2026-03-20','2026-04-02','2026-04-03','2026-04-14',
-    '2026-05-01','2026-08-15','2026-10-08','2026-10-09','2026-10-28',
-    '2026-11-25','2026-12-25'
+    // 2025
+    '2025-01-26', // Republic Day
+    '2025-02-26', // Mahashivratri
+    '2025-03-14', // Holi
+    '2025-03-31', // Id-Ul-Fitr
+    '2025-04-10', // Shri Ram Navami
+    '2025-04-14', // Dr. Ambedkar Jayanti
+    '2025-04-18', // Good Friday
+    '2025-05-01', // Maharashtra Day
+    '2025-08-15', // Independence Day
+    '2025-08-27', // Ganesh Chaturthi
+    '2025-10-02', // Gandhi Jayanti / Dussehra
+    '2025-10-20', // Diwali-Laxmi Pujan
+    '2025-10-21', // Diwali-Balipratipada (check NSE)
+    '2025-11-05', // Prakash Gurpurb
+    '2025-12-25', // Christmas
+    // 2026
+    '2026-01-15', // Municipal Corporation Election - Maharashtra
+    '2026-01-26', // Republic Day
+    '2026-03-03', // Holi
+    '2026-03-26', // Shri Ram Navami
+    '2026-03-31', // Mahavir Jayanti
+    '2026-04-03', // Good Friday
+    '2026-04-14', // Dr. Ambedkar Jayanti
+    '2026-05-01', // Maharashtra Day
+    '2026-05-28', // Bakri Id
+    '2026-06-26', // Muharram
+    '2026-09-14', // Ganesh Chaturthi
+    '2026-10-02', // Gandhi Jayanti
+    '2026-10-20', // Dussehra
+    '2026-11-10', // Diwali-Balipratipada
+    '2026-11-24', // Prakash Gurpurb Sri Guru Nanak Dev
+    '2026-12-25', // Christmas
 ]);
 
 function dateKey(d) {
@@ -1032,20 +1077,43 @@ function minutesUntilOpen(market) {
     return 0;
 }
 
+function minutesUntilClose(market) {
+    const now  = new Date();
+    const tz   = market === 'us' ? 'America/New_York' : 'Asia/Kolkata';
+    const closeMin = market === 'us' ? 960 : 930;
+    const local = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+    const t = local.getHours() * 60 + local.getMinutes();
+    return Math.max(0, closeMin - t);
+}
+
 function setBadge(id, status, market) {
     const el = document.getElementById(id);
     if (!el) return;
     el.className = 'market-badge ' + status;
+
+    // Find or create the sibling time label
+    let timeLabel = el.nextElementSibling;
+    if (!timeLabel || !timeLabel.classList.contains('market-time')) {
+        timeLabel = document.createElement('span');
+        timeLabel.className = 'market-time';
+        el.parentNode.insertBefore(timeLabel, el.nextSibling);
+    }
+
     if (status === 'open') {
-        el.innerHTML = 'LIVE';
+        el.textContent = 'LIVE';
+        const mins = minutesUntilClose(market);
+        const hrs  = Math.floor(mins / 60);
+        const m    = mins % 60;
+        timeLabel.textContent = hrs > 0 ? `Closes in ${hrs}h ${m}m` : `Closes in ${m}m`;
     } else if (status === 'extended') {
-        el.innerHTML = 'EXTENDED';
+        el.textContent = 'EXTENDED';
+        timeLabel.textContent = '';
     } else {
+        el.textContent = 'CLOSED';
         const mins = minutesUntilOpen(market);
         const hrs  = Math.floor(mins / 60);
         const m    = mins % 60;
-        const opensIn = hrs > 0 ? `Opens in ${hrs}h ${m}m` : `Opens in ${m}m`;
-        el.innerHTML = `CLOSED <span style="font-size:8px;opacity:0.8;display:block;margin-top:1px;">${opensIn}</span>`;
+        timeLabel.textContent = hrs > 0 ? `Opens in ${hrs}h ${m}m` : `Opens in ${m}m`;
     }
 }
 
