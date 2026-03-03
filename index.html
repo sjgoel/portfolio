@@ -164,11 +164,11 @@
         .sc-stat { flex: 1; text-align: center; }
         .sc-stat.total-pl .sc-value {
             display: inline-block;
-            border: 1.5px solid currentColor;
             border-radius: 4px;
             padding: 2px 8px;
-            opacity: 0.9;
         }
+        .sc-stat.total-pl .sc-value.green { background: #15803d; color: #fff; }
+        .sc-stat.total-pl .sc-value.red   { background: #dc2626; color: #fff; }
         .sc-label {
             font-family: var(--mono);
             font-size: 8px;
@@ -329,7 +329,11 @@
 
         .pl-main { font-weight: 700; font-size: 12px; }
         .pl-pct  { font-size: 9px; margin-top: 1px; }
-        td .pl-wrapper { display: inline-block; border: 1.5px solid currentColor; border-radius: 4px; padding: 2px 6px; opacity: 0.85; }
+        td .pl-wrapper { display: inline-block; border-radius: 4px; padding: 3px 7px; }
+        td .pl-wrapper.chg-pos { background: #15803d; color: #fff; }
+        td .pl-wrapper.chg-neg { background: #dc2626; color: #fff; }
+        td .pl-wrapper .pl-main { color: inherit; }
+        td .pl-wrapper .pl-pct  { color: inherit; opacity: 0.85; }
 
         /* Today P/L — normal weight, smaller to distinguish from Total P/L */
         .today-main { font-weight: 400; font-size: 11px; }
@@ -955,33 +959,94 @@ function updateSyncBanner() {
 // ─────────────────────────────────────────────
 //  MARKET STATUS
 // ─────────────────────────────────────────────
+// US market holidays 2025-2026
+const US_HOLIDAYS = new Set([
+    '2025-01-01','2025-01-20','2025-02-17','2025-04-18','2025-05-26',
+    '2025-06-19','2025-07-04','2025-09-01','2025-11-27','2025-12-25',
+    '2026-01-01','2026-01-19','2026-02-16','2026-04-03','2026-05-25',
+    '2026-06-19','2026-07-03','2026-09-07','2026-11-26','2026-12-25'
+]);
+
+// India NSE holidays 2025-2026
+const INDIA_HOLIDAYS = new Set([
+    '2025-01-26','2025-02-26','2025-03-14','2025-03-31','2025-04-10',
+    '2025-04-14','2025-04-18','2025-05-01','2025-08-15','2025-08-27',
+    '2025-10-02','2025-10-02','2025-10-20','2025-10-24','2025-11-05',
+    '2025-12-25',
+    '2026-01-26','2026-03-20','2026-04-02','2026-04-03','2026-04-14',
+    '2026-05-01','2026-08-15','2026-10-08','2026-10-09','2026-10-28',
+    '2026-11-25','2026-12-25'
+]);
+
+function dateKey(d) {
+    return d.getFullYear() + '-' +
+        String(d.getMonth()+1).padStart(2,'0') + '-' +
+        String(d.getDate()).padStart(2,'0');
+}
+
 function usMarketStatus() {
     const now = new Date();
-    const day = now.getDay();
-    if (day === 0 || day === 6) return 'closed';
     const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    const t   = est.getHours() * 60 + est.getMinutes();
-    if (t >= 570 && t <= 960) return 'open';      // 9:30–16:00
-    if (t >= 240 && t < 570)  return 'extended';  // 4:00–9:30 pre-market
-    if (t > 960 && t <= 1200) return 'extended';  // 16:00–20:00 after-hours
+    const day = est.getDay();
+    if (day === 0 || day === 6) return 'closed';
+    if (US_HOLIDAYS.has(dateKey(est))) return 'closed';
+    const t = est.getHours() * 60 + est.getMinutes();
+    if (t >= 570 && t <= 960) return 'open';
+    if (t >= 240 && t < 570)  return 'extended';
+    if (t > 960 && t <= 1200) return 'extended';
     return 'closed';
 }
 
 function indiaMarketStatus() {
     const now = new Date();
-    const day = now.getDay();
-    if (day === 0 || day === 6) return 'closed';
     const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    const t   = ist.getHours() * 60 + ist.getMinutes();
+    const day = ist.getDay();
+    if (day === 0 || day === 6) return 'closed';
+    if (INDIA_HOLIDAYS.has(dateKey(ist))) return 'closed';
+    const t = ist.getHours() * 60 + ist.getMinutes();
     if (t >= 555 && t <= 930) return 'open';
     return 'closed';
 }
 
-function setBadge(id, status) {
+function minutesUntilOpen(market) {
+    const now = new Date();
+    const tz  = market === 'us' ? 'America/New_York' : 'Asia/Kolkata';
+    const holidays = market === 'us' ? US_HOLIDAYS : INDIA_HOLIDAYS;
+    const openMin  = market === 'us' ? 570 : 555;
+
+    let check = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+    let safety = 0;
+    while (safety++ < 10) {
+        const day = check.getDay();
+        const dk  = dateKey(check);
+        const t   = check.getHours() * 60 + check.getMinutes();
+        if (day !== 0 && day !== 6 && !holidays.has(dk) && t < openMin) {
+            // Opens today
+            const minsLeft = openMin - t;
+            const diff = now - new Date(now.toLocaleString('en-US', { timeZone: tz }));
+            return minsLeft;
+        }
+        // Advance to next day at midnight
+        check = new Date(check.getFullYear(), check.getMonth(), check.getDate() + 1, 0, 1);
+    }
+    return 0;
+}
+
+function setBadge(id, status, market) {
     const el = document.getElementById(id);
     if (!el) return;
     el.className = 'market-badge ' + status;
-    el.textContent = status === 'open' ? 'LIVE' : status === 'extended' ? 'EXTENDED' : 'CLOSED';
+    if (status === 'open') {
+        el.innerHTML = 'LIVE';
+    } else if (status === 'extended') {
+        el.innerHTML = 'EXTENDED';
+    } else {
+        const mins = minutesUntilOpen(market);
+        const hrs  = Math.floor(mins / 60);
+        const m    = mins % 60;
+        const opensIn = hrs > 0 ? `Opens in ${hrs}h ${m}m` : `Opens in ${m}m`;
+        el.innerHTML = `CLOSED <span style="font-size:8px;opacity:0.8;display:block;margin-top:1px;">${opensIn}</span>`;
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -1238,8 +1303,8 @@ async function updateIndices() {
 
 async function updateAllPortfolios() {
     setDot('loading');
-    setBadge('usMarketBadge',    usMarketStatus());
-    setBadge('indiaMarketBadge', indiaMarketStatus());
+    setBadge('usMarketBadge',    usMarketStatus(), 'us');
+    setBadge('indiaMarketBadge', indiaMarketStatus(), 'india');
     updateIndices();
 
     let anyError = false;
