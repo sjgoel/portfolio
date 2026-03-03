@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #eef0f3;
+            --surface: #f7f8fa;
+            --surface2: #eceef1;
+            --border: #e5e7eb;
+            --text: #1a1a2e;
+            --muted: #6b7280;
+            --us: #2563eb;
+            --india: #ea6c0a;
+            --green: #16a34a;
+            --neon: #00c853;
+            --red: #dc2626;
+            --yellow: #d97706;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'IBM Plex Sans', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        /* ─── HEADER ─────────────────────────── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        .header-title {
+            font-family: var(--mono);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--text);
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pulse-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+        .pulse-dot.active { animation: blink 2s ease-in-out infinite; }
+        .pulse-dot.error { background: var(--red); }
+        .pulse-dot.warn { background: var(--yellow); }
+
+        @keyframes blink {
+            0%,100% { opacity:1; } 50% { opacity: 0.3; }
+        }
+
+        .last-update {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        .countdown-bar {
+            width: 60px; height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .countdown-fill {
+            height: 100%;
+            background: var(--us);
+            border-radius: 2px;
+            transition: width 1s linear;
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .btn:hover { border-color: var(--us); background: rgba(37,99,235,0.06); }
+        .btn.primary { border-color: var(--us); background: var(--us); color: white; }
+
+        /* ─── SYNC STATUS ─────────────────────── */
+        .sync-banner {
+            display: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-family: var(--mono);
+            margin-bottom: 10px;
+            border: 1px solid;
+        }
+        .sync-banner.info { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+        .sync-banner.warn { background: #fffbeb; border-color: #fde68a; color: #d97706; }
+        .sync-banner.show { display: block; }
+
+        /* ─── TOP SUMMARY BOX ─────────────────── */
+        .top-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .summary-card {
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+        }
+
+        .summary-card.us-card   { border-left: 4px solid var(--us); border-color: var(--border); border-left-color: var(--us); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .summary-card.india-card { border-left: 4px solid var(--india); border-color: var(--border); border-left-color: var(--india); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+
+        .summary-card-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .us-card   .summary-card-title { color: var(--us); }
+        .india-card .summary-card-title { color: var(--india); }
+
+        .summary-card-stats {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        .sc-stat { flex: 1; text-align: center; }
+        .sc-label {
+            font-family: var(--mono);
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 3px;
+        }
+        .sc-value {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .sc-value.green { color: var(--green); }
+        .sc-value.red   { color: var(--red); }
+
+        .sc-divider {
+            width: 1px;
+            height: 28px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 480px) {
+            .sc-value { font-size: 11px; }
+            .summary-card { padding: 10px 10px; }
+        }
+
+        /* Mobile: stack cards vertically, use 2x2 grid for stats */
+        @media (max-width: 600px) {
+            .top-summary {
+                grid-template-columns: 1fr;
+            }
+            .summary-card-stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px 0;
+            }
+            .sc-divider { display: none; }
+            .sc-stat { text-align: left; padding: 4px 8px; }
+            .sc-stat:nth-child(2n) { text-align: right; }
+            .sc-value { font-size: 13px; }
+        }
+
+
+
+        .region-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px 10px 0 0;
+            border-bottom: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .region-header.india { border-top: 3px solid var(--india); }
+        .region-header.us    { border-top: 3px solid var(--us); }
+
+        .region-flag { font-size: 16px; }
+
+        .region-name {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .region-name.us { color: var(--us); }
+        .region-name.india { color: var(--india); }
+
+        .region-stats {
+            margin-left: auto;
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat { text-align: right; }
+        .stat-label { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1px; }
+        .stat-value { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
+        .stat-value.green { color: var(--green); }
+        .stat-value.red   { color: var(--red); }
+
+        .market-badge {
+            font-family: var(--mono);
+            font-size: 9px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .market-badge.open   { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .market-badge.open::before {
+            content: '';
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: liveblink 1.2s ease-in-out infinite;
+        }
+        @keyframes liveblink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+        .market-badge.closed   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+        .market-badge.extended { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+
+        .table-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0 0 10px 10px;
+            overflow-x: auto;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .region-header.us    + .table-wrap { border-color: var(--border); }
+        .region-header.india + .table-wrap { border-color: var(--border); }
+
+        table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; table-layout:fixed; }
+
+        /* Fixed column widths - same for both US and India tables */
+        table th:nth-child(1), table td:nth-child(1) { width: 13%; text-align: left; } /* Symbol */
+        table th:nth-child(2), table td:nth-child(2) { width: 10%; text-align: left; } /* LTP */
+        table th:nth-child(3), table td:nth-child(3) { width: 12%; text-align: center; } /* Units */
+        table th:nth-child(4), table td:nth-child(4) { width: 10%; text-align: center; } /* Avg */
+        table th:nth-child(5), table td:nth-child(5) { width: 17%; text-align: center; } /* Invested */
+        table th:nth-child(6), table td:nth-child(6) { width: 15%; text-align: center; } /* Value */
+        table th:nth-child(7), table td:nth-child(7) { width: 14%; text-align: center; } /* Total P/L */
+        table th:nth-child(8), table td:nth-child(8) { width: 14%; text-align: center; } /* Today P/L */
+
+        thead tr { background: #f9fafb; border-bottom: 1px solid var(--border); }
+        th { padding: 7px 8px; font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-right: 1px solid #f0f0f0; }
+        th:first-child { padding-left: 12px; }
+        th:last-child { border-right: none; padding-right: 12px; }
+
+        tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.1s; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: #fafafa; }
+
+        td { padding: 7px 8px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; border-right: 1px solid #f3f4f6; }
+        td:first-child { padding-left: 12px; }
+        td:last-child { border-right: none; padding-right: 12px; }
+
+        .sym { font-weight: 700; font-size: 13px; }
+        .sym.us    { color: var(--us); }
+        .sym.india { color: var(--india); }
+        .sym:hover { text-decoration: underline; }
+
+        .price-cell { font-size:13px; font-weight:700; color: #00c853; }
+        .units-cell { color: var(--muted); font-size: 10px; }
+        .avg-cell   { color: var(--muted); }
+        .cost-cell  { color: var(--muted); }
+        .value-cell { color: var(--text); font-weight: 600; }
+
+        .chg-pos { color: var(--green); }
+        .chg-neg { color: var(--red); }
+
+        .pl-main { font-weight: 700; font-size: 12px; }
+        .pl-pct  { font-size: 9px; margin-top: 1px; }
+
+        /* Today P/L — normal weight, smaller to distinguish from Total P/L */
+        .today-main { font-weight: 400; font-size: 11px; }
+        .today-pct  { font-size: 9px; margin-top: 1px; }
+
+        /* Row separators between positions */
+        tbody tr.row-main + tr.row-main td,
+        tbody tr.row-mobile + tr.row-main td { border-top: 2px solid #e5e7eb; }
+        tbody tr.row-mobile td { border-top: none; }
+
+        /* Today P/L — lighter weight, smaller, to distinguish from Total P/L */
+        .today-main { font-weight: 400; font-size: 11px; color: var(--muted); }
+        .today-main.chg-pos { color: var(--green); font-weight: 500; }
+        .today-main.chg-neg { color: var(--red);   font-weight: 500; }
+        .today-pct  { font-size: 9px; margin-top: 1px; opacity: 0.75; }
+
+        /* Row separator between positions */
+        tbody tr.row-main { border-bottom: none; }
+        tbody tr.row-mobile { border-bottom: 2px solid #e5e7eb; }
+        tbody tr.row-main + tr.row-main { border-top: 2px solid #e5e7eb; }
+
+        /* skeleton loader */
+        .skeleton-row td { padding: 10px 10px; }
+        .skel {
+            display: inline-block;
+            height: 10px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        /* ─── MODAL ───────────────────────────── */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+            max-width: 620px;
+            width: 100%;
+            margin: 20px auto;
+        }
+
+        .modal-hdr {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--text); }
+
+        .close-btn {
+            background: none; border: none; color: var(--muted);
+            font-size: 22px; cursor: pointer; line-height: 1;
+            width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; transition: background 0.15s;
+        }
+        .close-btn:hover { background: var(--surface2); color: var(--text); }
+
+        .section-hdr {
+            font-family: var(--mono); font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            margin: 20px 0 10px 0; padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+        .section-hdr.us    { color: var(--us); border-color: rgba(59,130,246,0.3); }
+        .section-hdr.india { color: var(--india); border-color: rgba(249,115,22,0.3); }
+        .section-hdr.sync  { color: #a78bfa; border-color: rgba(167,139,250,0.3); }
+
+        .pos-form {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1.5fr auto;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: end;
+        }
+
+        .fg { display: flex; flex-direction: column; gap: 4px; }
+        .fg label { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+        input[type="text"], input[type="number"], input[type="password"] {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 7px 10px;
+            border-radius: 6px;
+            font-family: var(--mono);
+            font-size: 12px;
+            width: 100%;
+            transition: border-color 0.15s;
+        }
+        input:focus { outline: none; border-color: var(--us); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+
+        .add-btn {
+            font-family: var(--mono); font-size: 11px; font-weight: 600;
+            background: rgba(34,197,94,0.15);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: var(--green);
+            padding: 7px 14px; border-radius: 6px; cursor: pointer;
+            white-space: nowrap; transition: background 0.15s;
+        }
+        .add-btn:hover { background: rgba(34,197,94,0.25); }
+
+        .pos-list { display: flex; flex-direction: column; gap: 6px; }
+
+        .pos-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px; padding: 8px 12px;
+        }
+
+        .pos-sym { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+        .pos-sym.us    { color: var(--us); }
+        .pos-sym.india { color: var(--india); }
+        .pos-detail { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+        .del-btn {
+            font-size: 10px; font-family: var(--mono);
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.2);
+            color: var(--red); padding: 4px 10px; border-radius: 4px; cursor: pointer;
+        }
+        .del-btn:hover { background: rgba(239,68,68,0.2); }
+
+        .edit-btn {
+            font-size: 10px; font-family: var(--mono);
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.2);
+            color: #93c5fd; padding: 4px 10px; border-radius: 4px; cursor: pointer;
+        }
+        .edit-btn:hover { background: rgba(59,130,246,0.2); }
+
+        .edit-panel {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 6px;
+            display: none;
+        }
+        .edit-panel.open { display: block; }
+        .edit-panel-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 6px;
+            align-items: end;
+        }
+        .save-btn {
+            font-size: 10px; font-family: var(--mono);
+            background: rgba(34,197,94,0.15);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: var(--green); padding: 4px 10px; border-radius: 4px; cursor: pointer;
+            white-space: nowrap;
+        }
+        .save-btn:hover { background: rgba(34,197,94,0.25); }
+        .note-tag {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: #4b5563;
+            background: #d1d5db;
+            border: 1px solid #c4c9d1;
+            border-radius: 4px;
+            padding: 1px 5px;
+            margin-left: 4px;
+            letter-spacing: 0.06em;
+        }
+
+        .sync-info {
+            font-family: var(--mono); font-size: 10px; color: var(--muted);
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; line-height: 1.6;
+        }
+        .sync-info a { color: #93c5fd; }
+
+        .sync-form { display: flex; flex-direction: column; gap: 10px; }
+
+        .token-row { display: flex; gap: 8px; align-items: end; }
+        .token-row .fg { flex: 1; }
+
+        .btn-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+        .sync-status-text {
+            font-family: var(--mono); font-size: 10px;
+            padding: 6px 10px; border-radius: 6px; margin-top: 8px;
+        }
+        .sync-status-text.ok   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+        .sync-status-text.err  { background: #fef2f2; color: var(--red); border: 1px solid #fca5a5; }
+        .sync-status-text.info { background: #eff6ff; color: var(--us);  border: 1px solid #bfdbfe; }
+
+        .no-pos { font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 8px 0; }
+
+        /* Desktop: hide mobile rows */
+        .row-mobile { display: none; }
+        .col-desktop { display: table-cell; }
+
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+
+            /* On mobile: hide desktop-only columns, show 2nd row */
+            .col-desktop { display: none !important; }
+            .row-mobile { display: table-row; }
+
+            /* Mobile: Symbol, LTP, Value, Today P/L */
+            table th:nth-child(1), table td:nth-child(1) { width: 24%; }
+            table th:nth-child(2), table td:nth-child(2) { width: 22%; }
+            table th:nth-child(6), table td:nth-child(6) { width: 28%; }
+            table th:nth-child(8), table td:nth-child(8) { width: 26%; }
+
+            th, td { padding: 6px 5px; font-size: 10px; }
+            th:first-child, td:first-child { padding-left: 8px; }
+            td:last-child, th:last-child { padding-right: 8px; }
+        }
+        /* ─── MARKET INDICES BAR ─────────────── */
+        .indices-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .indices-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            display: flex;
+            align-items: center;
+            gap: 0;
+            height: 40px;
+            overflow: hidden;
+        }
+        .indices-panel.us-panel     { border-left: 4px solid var(--us); }
+        .indices-panel.india-panel  { border-left: 4px solid var(--india); }
+        .indices-panel.metals-panel { border-left: 4px solid #d97706; }
+
+        .indices-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-right: 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .indices-panel.us-panel     .indices-label { color: var(--us); }
+        .indices-panel.india-panel  .indices-label { color: var(--india); }
+        .indices-panel.metals-panel .indices-label { color: #d97706; }
+
+        .indices-list {
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            align-items: center;
+            flex: 1;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+        .index-item {
+            display: flex;
+            flex-direction: row;
+            align-items: baseline;
+            gap: 5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .index-name  { font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+        .index-price { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
+        .index-chg   { font-family: var(--mono); font-size: 10px; font-weight: 500; }
+        .index-chg.pos { color: var(--green); }
+        .index-chg.neg { color: var(--red); }
+        .index-divider { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
+
+        @media (max-width: 600px) {
+            .indices-bar { grid-template-columns: 1fr !important; }
+            .indices-panel { height: auto; padding: 8px 14px; align-items: flex-start; }
+            .indices-list { gap: 3px; flex-wrap: wrap; overflow: visible; flex-direction: column; }
+            .index-item { flex-direction: row; white-space: nowrap; }
+            .index-chg { font-size: 9px; }
+            .indices-label { width: 52px; min-width: 52px; margin-top: 2px; }
+            .index-divider { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div class="pulse-dot active" id="statusDot"></div>
+            <span class="header-title">PORTFOLIO</span>
+        </div>
+    </div>
+    <div class="header-meta">
+        <span class="last-update" id="lastUpdate">–</span>
+        <div class="countdown-bar"><div class="countdown-fill" id="countdownFill" style="width:100%"></div></div>
+        <button class="btn primary" onclick="openSettings()">⚙ Manage</button>
+    </div>
+</div>
+
+<!-- MARKET INDICES BAR -->
+<div class="indices-bar">
+    <div class="indices-panel us-panel">
+        <span class="indices-label">🇺🇸 US</span>
+        <div class="indices-list" id="usIndices">
+            <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading…</span>
+        </div>
+    </div>
+    <div class="indices-panel metals-panel">
+        <span class="indices-label" style="visibility:hidden;">⠀⠀⠀</span>
+        <div class="indices-list" id="metalIndices">
+            <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading…</span>
+        </div>
+    </div>
+    <div class="indices-panel india-panel">
+        <span class="indices-label">🇮🇳 India</span>
+        <div class="indices-list" id="indiaIndices">
+            <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading…</span>
+        </div>
+    </div>
+</div>
+
+<!-- TOP SUMMARY BOX -->
+<div class="top-summary">
+    <div class="summary-card us-card">
+        <div class="summary-card-title"><span>🇺🇸</span> US <span class="market-badge closed" id="usMarketBadge">Closed</span></div>
+        <div class="summary-card-stats">
+            <div class="sc-stat">
+                <div class="sc-label">Value</div>
+                <div class="sc-value" id="usTotalValue">$–</div>
+            </div>
+            <div class="sc-divider"></div>
+            <div class="sc-stat">
+                <div class="sc-label">Today P/L</div>
+                <div class="sc-value" id="usTodayPnL">$–</div>
+            </div>
+            <div class="sc-divider"></div>
+            <div class="sc-stat">
+                <div class="sc-label">Total P/L</div>
+                <div class="sc-value" id="usTotalPnL">$–</div>
+            </div>
+            <div class="sc-divider"></div>
+            <div class="sc-stat">
+                <div class="sc-label">Return</div>
+                <div class="sc-value" id="usTotalReturn">–%</div>
+            </div>
+        </div>
+    </div>
+    <div class="summary-card india-card">
+        <div class="summary-card-title"><span>🇮🇳</span> India <span class="market-badge closed" id="indiaMarketBadge">Closed</span></div>
+        <div class="summary-card-stats">
+            <div class="sc-stat">
+                <div class="sc-label">Value</div>
+                <div class="sc-value" id="indiaTotalValue">₹–</div>
+            </div>
+            <div class="sc-divider"></div>
+            <div class="sc-stat">
+                <div class="sc-label">Today P/L</div>
+                <div class="sc-value" id="indiaTodayPnL">₹–</div>
+            </div>
+            <div class="sc-divider"></div>
+            <div class="sc-stat">
+                <div class="sc-label">Total P/L</div>
+                <div class="sc-value" id="indiaTotalPnL">₹–</div>
+            </div>
+            <div class="sc-divider"></div>
+            <div class="sc-stat">
+                <div class="sc-label">Return</div>
+                <div class="sc-value" id="indiaTotalReturn">–%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- US PORTFOLIO -->
+<div class="region-block">
+    <div class="region-header us">
+        <span class="region-flag">🇺🇸</span>
+        <span class="region-name us">US Positions</span>
+    </div>
+    <div class="table-wrap us" id="usTable">
+        <table><tbody id="usTableBody"><tr class="skeleton-row"><td colspan="7"><div class="skel" style="width:80%"></div></td></tr></tbody></table>
+    </div>
+</div>
+
+<!-- INDIA PORTFOLIO -->
+<div class="region-block">
+    <div class="region-header india">
+        <span class="region-flag">🇮🇳</span>
+        <span class="region-name india">India Positions</span>
+    </div>
+    <div class="table-wrap india" id="indiaTableWrap">
+        <table><tbody id="indiaTableBody"><tr class="skeleton-row"><td colspan="7"><div class="skel" style="width:80%"></div></td></tr></tbody></table>
+    </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+        <div class="modal-hdr">
+            <span class="modal-title">⚙ PORTFOLIO SETTINGS</span>
+            <button class="close-btn" onclick="closeSettings()">✕</button>
+        </div>
+
+        <!-- US Positions -->
+        <div class="section-hdr us">🇺🇸 US Positions</div>
+        <div class="pos-form" style="grid-template-columns:2fr 1.5fr 1.5fr 1fr auto;" id="usForm">
+            <div class="fg"><label>Symbol</label><input type="text" id="usSymbol" placeholder="SIVR"></div>
+            <div class="fg"><label>Units</label><input type="number" id="usUnits" placeholder="100" step="0.000001"></div>
+            <div class="fg"><label>Avg Price ($)</label><input type="number" id="usPrice" placeholder="73.41" step="0.01"></div>
+            <div class="fg"><label>Note (4 letters)</label><input type="text" id="usNote" placeholder="RIRA" maxlength="4" style="text-transform:uppercase"></div>
+            <button class="add-btn" onclick="addUSPos()">+ Add</button>
+        </div>
+        <div class="pos-list" id="usPosList"></div>
+
+        <!-- India Positions -->
+        <div class="section-hdr india">🇮🇳 India Positions</div>
+        <div class="pos-form" style="grid-template-columns:2fr 1.5fr 1.5fr 1fr auto;">
+            <div class="fg"><label>Symbol</label><input type="text" id="indiaSymbol" placeholder="GOLDBEES"></div>
+            <div class="fg"><label>Units</label><input type="number" id="indiaUnits" placeholder="1000" step="1"></div>
+            <div class="fg"><label>Avg Price (₹)</label><input type="number" id="indiaPrice" placeholder="128.60" step="0.01"></div>
+            <div class="fg"><label>Note (4 letters)</label><input type="text" id="indiaNote" placeholder="HDFC" maxlength="4" style="text-transform:uppercase"></div>
+            <button class="add-btn" onclick="addIndiaPos()">+ Add</button>
+        </div>
+        <div class="pos-list" id="indiaPosList"></div>
+
+        <!-- Cloud Sync -->
+        <div class="section-hdr sync">☁ Cloud Sync (GitHub Gist)</div>
+        <div class="sync-info">
+            Cross-device sync via <strong>GitHub Gist</strong> (free).<br>
+            <strong>One-time setup:</strong>
+            1. Go to <a href="https://gist.github.com" target="_blank">gist.github.com</a> → Create a new <em>secret</em> gist → name the file <code>portfolio.json</code> and put <code>{}</code> as content → Save.<br>
+            2. Copy the Gist ID from the URL (the long alphanumeric string).<br>
+            3. Go to <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> → Generate a token with <code>gist</code> scope only → copy it.<br>
+            4. Paste both below and click Save. Your data will sync across all devices.
+        </div>
+        <div class="sync-form">
+            <div class="fg"><label>GitHub Gist ID</label><input type="text" id="gistId" placeholder="abc123def456..."></div>
+            <div class="token-row">
+                <div class="fg"><label>GitHub Token (stored locally, never shared)</label><input type="password" id="gistToken" placeholder="ghp_..."></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn primary" onclick="saveSyncConfig()">💾 Save Config</button>
+                <button class="btn" onclick="pushToGist()">⬆ Push Now</button>
+                <button class="btn" onclick="pullFromGist()">⬇ Pull Now</button>
+                <button class="btn" onclick="clearSyncConfig()">✕ Clear</button>
+            </div>
+            <div id="syncStatusMsg"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIG & STATE
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  LAST ACCESSED INFO
+// ─────────────────────────────────────────────
+const REFRESH_SEC = 30;
+
+const DEFAULT_US = [
+    { symbol: 'SIVR', units: 463.137017, purchasePrice: 73.41, note: 'ROBN' },
+    { symbol: 'GLDM', units: 671.844869, purchasePrice: 98.24, note: 'ROBN' },
+    { symbol: 'GLDM', units: 1180.406,   purchasePrice: 105.90, note: 'FIDL' },
+    { symbol: 'SIVR', units: 676.557,    purchasePrice: 84.13, note: 'FIDL' }
+];
+const DEFAULT_INDIA = [];
+
+let usPositions    = JSON.parse(localStorage.getItem('usPositions'))    || DEFAULT_US;
+let indiaPositions = JSON.parse(localStorage.getItem('indiaPositions')) || DEFAULT_INDIA;
+let lastPrices     = {};
+let countdownSecs  = REFRESH_SEC;
+let countdownTimer = null;
+let refreshTimer   = null;
+
+// ─────────────────────────────────────────────
+//  LOCAL STORAGE
+// ─────────────────────────────────────────────
+function saveLocal() {
+    localStorage.setItem('usPositions',    JSON.stringify(usPositions));
+    localStorage.setItem('indiaPositions', JSON.stringify(indiaPositions));
+}
+
+// ─────────────────────────────────────────────
+//  GITHUB GIST SYNC
+// ─────────────────────────────────────────────
+function getSyncConfig() {
+    return {
+        gistId: localStorage.getItem('gistId') || '74b3e6ddfb7118b3e5543b724ca69cde',
+        token:  localStorage.getItem('gistToken') || ''
+    };
+}
+
+function syncConfigured() {
+    const c = getSyncConfig();
+    return !!(c.gistId && c.token);
+}
+
+async function pushToGist(silent = false) {
+    const c = getSyncConfig();
+    if (!c.gistId || !c.token) {
+        if (!silent) showSyncMsg('No sync config saved. Fill in Gist ID + Token first.', 'err');
+        return false;
+    }
+    const payload = { usPositions, indiaPositions, updated: new Date().toISOString() };
+    try {
+        const res = await fetch(`https://api.github.com/gists/${c.gistId}`, {
+            method: 'PATCH',
+            headers: {
+                Authorization: `token ${c.token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                files: { 'gistfile1.txt': { content: JSON.stringify(payload, null, 2) } }
+            })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!silent) showSyncMsg('✓ Pushed to cloud successfully.', 'ok');
+        return true;
+    } catch (e) {
+        if (!silent) showSyncMsg(`Push failed: ${e.message}`, 'err');
+        return false;
+    }
+}
+
+async function pullFromGist(silent = false) {
+    const c = getSyncConfig();
+    if (!c.gistId) {
+        if (!silent) showSyncMsg('No Gist ID configured.', 'err');
+        return false;
+    }
+    try {
+        // Try authenticated first, fall back to raw public URL
+        const headers = c.token ? { Authorization: `token ${c.token}` } : {};
+        const res = await fetch(`https://api.github.com/gists/${c.gistId}`, { headers });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const fileNames = Object.keys(json.files);
+        const raw = json.files['gistfile1.txt']?.content 
+                 || json.files['portfolio.json']?.content 
+                 || json.files[fileNames[0]]?.content;
+        if (!raw) throw new Error(`No readable file in gist. Files found: ${fileNames.join(', ')}`);
+        const data = JSON.parse(raw);
+        if (data.usPositions !== undefined || data.indiaPositions !== undefined) {
+            if (data.usPositions !== undefined)    usPositions    = data.usPositions;
+            if (data.indiaPositions !== undefined) indiaPositions = data.indiaPositions;
+            saveLocal();
+            renderPosList();
+            updateAllPortfolios();
+            const ts = data.updated ? new Date(data.updated).toLocaleString() : 'unknown time';
+            if (!silent) showSyncMsg(`✓ Pulled from cloud (${ts}).`, 'ok');
+            return true;
+        }
+        const keys = Object.keys(data).join(', ') || '(empty)';
+        throw new Error(`Invalid data — keys found: ${keys}`);
+    } catch (e) {
+        if (!silent) showSyncMsg(`Pull failed: ${e.message}`, 'err');
+        return false;
+    }
+}
+
+function saveSyncConfig() {
+    const id  = document.getElementById('gistId').value.trim();
+    const tok = document.getElementById('gistToken').value.trim();
+    if (!id || !tok) { showSyncMsg('Enter both Gist ID and Token.', 'err'); return; }
+    localStorage.setItem('gistId',    id);
+    localStorage.setItem('gistToken', tok);
+    showSyncMsg('Config saved locally. Testing connection…', 'info');
+    pullFromGist(false);
+    updateSyncBanner();
+}
+
+function clearSyncConfig() {
+    localStorage.removeItem('gistId');
+    localStorage.removeItem('gistToken');
+    document.getElementById('gistId').value    = '';
+    document.getElementById('gistToken').value = '';
+    showSyncMsg('Sync config cleared.', 'info');
+    updateSyncBanner();
+}
+
+function showSyncMsg(msg, type) {
+    const el = document.getElementById('syncStatusMsg');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'sync-status-text ' + type;
+}
+
+function updateSyncBanner() {
+    const b = document.getElementById('syncBanner');
+    if (!b) return;
+    if (syncConfigured() && getSyncConfig().token) {
+        b.textContent = '☁ Cloud sync active — edits sync across all devices.';
+        b.style.background = 'rgba(34,197,94,0.08)';
+        b.style.borderColor = 'rgba(34,197,94,0.25)';
+        b.style.color = '#86efac';
+        b.className = 'sync-banner info show';
+    } else {
+        b.textContent = '☁ Viewing live data. To edit positions, open ⚙ Manage on your main device.';
+        b.style.background = '';
+        b.style.borderColor = '';
+        b.style.color = '';
+        b.className = 'sync-banner info show';
+    }
+}
+
+// ─────────────────────────────────────────────
+//  MARKET STATUS
+// ─────────────────────────────────────────────
+function usMarketStatus() {
+    const now = new Date();
+    const day = now.getDay();
+    if (day === 0 || day === 6) return 'closed';
+    const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const t   = est.getHours() * 60 + est.getMinutes();
+    if (t >= 570 && t <= 960) return 'open';      // 9:30–16:00
+    if (t >= 240 && t < 570)  return 'extended';  // 4:00–9:30 pre-market
+    if (t > 960 && t <= 1200) return 'extended';  // 16:00–20:00 after-hours
+    return 'closed';
+}
+
+function indiaMarketStatus() {
+    const now = new Date();
+    const day = now.getDay();
+    if (day === 0 || day === 6) return 'closed';
+    const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const t   = ist.getHours() * 60 + ist.getMinutes();
+    if (t >= 555 && t <= 930) return 'open';
+    return 'closed';
+}
+
+function setBadge(id, status) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'market-badge ' + status;
+    el.textContent = status === 'open' ? 'LIVE' : status === 'extended' ? 'EXTENDED' : 'CLOSED';
+}
+
+// ─────────────────────────────────────────────
+//  PRICE FETCHING
+// ─────────────────────────────────────────────
+async function fetchPrice(symbol, isIndia) {
+    const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
+    const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+    ];
+
+    for (const proxy of proxies) {
+        try {
+            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+            if (!res.ok) continue;
+            const data = await res.json();
+            const result = data?.chart?.result?.[0];
+            if (!result) continue;
+            const meta = result.meta;
+            let price = meta.regularMarketPrice;
+            const closes = result.indicators?.quote?.[0]?.close;
+            if (closes) {
+                for (let i = closes.length - 1; i >= 0; i--) {
+                    if (closes[i] != null) { price = closes[i]; break; }
+                }
+            }
+            if (!price) price = meta.previousClose;
+            const prevClose = meta.previousClose || meta.chartPreviousClose || price;
+            if (price && price > 0) return { success: true, price, prevClose };
+        } catch { continue; }
+    }
+    return { success: false };
+}
+
+// ─────────────────────────────────────────────
+//  FORMAT HELPERS
+// ─────────────────────────────────────────────
+const fUSD = v => {
+    const decimals = Math.abs(v) >= 1000 ? 0 : 2;
+    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
+const fINR = v => {
+    const decimals = Math.abs(v) >= 1000 ? 0 : 2;
+    return '₹' + v.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
+const fPct = v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+const fINRshort = v => {
+    const abs = Math.abs(v);
+    const sign = v < 0 ? '-' : '+';
+    if (abs >= 1e7)  return sign + '₹' + (abs/1e7).toFixed(2)  + 'Cr';
+    if (abs >= 1e5)  return sign + '₹' + (abs/1e5).toFixed(2)  + 'L';
+    if (abs >= 1000) return sign + '₹' + (abs/1000).toFixed(1) + 'K';
+    return (v >= 0 ? '+' : '') + fINR(v);
+};
+
+// ─────────────────────────────────────────────
+//  RENDER TABLE
+// ─────────────────────────────────────────────
+function buildTableHTML(positions, prices, prevCloses, isIndia) {
+    const fmt = isIndia ? fINR : fUSD;
+    const symCls = isIndia ? 'india' : 'us';
+    let rows = '';
+    let totalCost = 0, totalValue = 0, totalTodayPnL = 0;
+
+    positions.forEach(pos => {
+        const price = prices[pos.symbol];
+        if (price == null) return;
+        const prevClose = prevCloses[pos.symbol] || price;
+        const cost      = pos.units * pos.purchasePrice;
+        const val       = pos.units * price;
+        const pnl       = val - cost;
+        const pnlPct    = (pnl / cost) * 100;
+        const chg       = price - pos.purchasePrice;
+        const chgPct    = (chg / pos.purchasePrice) * 100;
+        const todayPnL  = (price - prevClose) * pos.units;
+        const todayPct  = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0;
+        totalCost      += cost;
+        totalValue     += val;
+        totalTodayPnL  += todayPnL;
+
+        const plCls    = pnl >= 0 ? 'chg-pos' : 'chg-neg';
+        const chgCls   = chg >= 0 ? 'chg-pos' : 'chg-neg';
+        const todayCls = todayPnL >= 0 ? 'chg-pos' : 'chg-neg';
+        const unitsStr = isIndia ? pos.units.toLocaleString('en-IN') : pos.units.toFixed(6);
+
+        const tvSym = isIndia ? `NSE:${pos.symbol}` : pos.symbol;
+        const tvUrl = `https://www.tradingview.com/chart/?symbol=${tvSym}`;
+        rows += `<tr class="row-main">
+            <td style="text-align:left"><a href="${tvUrl}" target="_blank" style="text-decoration:none"><span class="sym ${symCls}">${pos.symbol}</span></a>${pos.note ? `<span class="note-tag">${pos.note}</span>` : ''}</td>
+            <td style="text-align:left" class="price-cell">${fmt(price)}</td>
+            <td style="text-align:center" class="units-cell col-desktop">${unitsStr}</td>
+            <td style="text-align:center" class="avg-cell col-desktop">${fmt(pos.purchasePrice)}</td>
+            <td style="text-align:center" class="cost-cell col-desktop">${fmt(cost)}</td>
+            <td style="text-align:center" class="value-cell">${fmt(val)}</td>
+            <td style="text-align:center" class="col-desktop">
+                <div class="pl-main ${plCls}">${(pnl>=0?'+':'') + fmt(pnl)}</div>
+                <div class="pl-pct ${plCls}">${fPct(pnlPct)}</div>
+            </td>
+            <td style="text-align:center">
+                <div class="today-main ${todayCls}">${(todayPnL>=0?'+':'') + fmt(todayPnL)}</div>
+                <div class="today-pct ${todayCls}">${fPct(todayPct)}</div>
+            </td>
+        </tr>
+        <tr class="row-mobile">
+            <td colspan="4" style="padding-top:0;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">
+                <div style="display:flex;gap:0;font-size:10px;">
+                    <div style="flex:1;color:var(--muted)">
+                        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Units</div>
+                        <div style="color:var(--text)">${unitsStr}</div>
+                    </div>
+                    <div style="flex:1;color:var(--muted)">
+                        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Avg</div>
+                        <div style="color:var(--text)">${fmt(pos.purchasePrice)}</div>
+                    </div>
+                    <div style="flex:1;color:var(--muted)">
+                        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Invested</div>
+                        <div style="color:var(--text)">${fmt(cost)}</div>
+                    </div>
+                    <div style="flex:1;text-align:right">
+                        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;color:var(--muted)">Total P/L</div>
+                        <div class="pl-main ${plCls}">${(pnl>=0?'+':'') + fmt(pnl)}</div>
+                        <div class="pl-pct ${plCls}">${fPct(pnlPct)}</div>
+                    </div>
+                </div>
+            </td>
+        </tr>`;
+    });
+
+    const header = `<thead><tr>
+        <th style="text-align:left">Symbol</th>
+        <th style="text-align:left">LTP</th>
+        <th style="text-align:center" class="col-desktop">Units</th>
+        <th style="text-align:center" class="col-desktop">Avg</th>
+        <th style="text-align:center" class="col-desktop">Invested</th>
+        <th style="text-align:center">Value</th>
+        <th style="text-align:center" class="col-desktop">Total P/L</th>
+        <th style="text-align:center">Today P/L</th>
+    </tr></thead>`;
+
+    return { html: `<table>${header}<tbody>${rows}</tbody></table>`, totalCost, totalValue, totalTodayPnL };
+}
+
+function updateSummary(prefix, fmt, totalValue, totalCost, totalTodayPnL) {
+    const pnl = totalValue - totalCost;
+    const ret = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
+    const todayPct = totalCost > 0 ? (totalTodayPnL / totalCost) * 100 : 0;
+    const valEl   = document.getElementById(`${prefix}TotalValue`);
+    const pnlEl   = document.getElementById(`${prefix}TotalPnL`);
+    const retEl   = document.getElementById(`${prefix}TotalReturn`);
+    const todayEl = document.getElementById(`${prefix}TodayPnL`);
+    if (valEl)   valEl.textContent  = fmt(totalValue);
+    if (pnlEl) { pnlEl.textContent  = (pnl>=0?'+':'') + fmt(pnl);  pnlEl.className  = 'sc-value ' + (pnl >= 0 ? 'green' : 'red'); }
+    if (retEl) { retEl.textContent  = fPct(ret);                    retEl.className  = 'sc-value ' + (ret >= 0 ? 'green' : 'red'); }
+    if (todayEl){ todayEl.textContent = (totalTodayPnL>=0?'+':'') + fmt(totalTodayPnL); todayEl.className = 'sc-value ' + (totalTodayPnL >= 0 ? 'green' : 'red'); }
+}
+
+// ─────────────────────────────────────────────
+//  MARKET INDICES
+// ─────────────────────────────────────────────
+const US_INDICES    = [ { sym: '^DJI',   name: 'DOW'    },
+                        { sym: '^GSPC',  name: 'S&P'    } ];
+const INDIA_INDICES = [ { sym: '^NSEI',  name: 'NSE'    },
+                        { sym: '^BSESN', name: 'BSE'    } ];
+const METAL_INDICES = [ { sym: 'GC=F',   name: 'GOLD'   },
+                        { sym: 'SI=F',   name: 'SILVER' } ];
+
+async function fetchIndexPrice(sym) {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d&_=${Date.now()}`;
+    const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+    ];
+    for (const proxy of proxies) {
+        try {
+            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+            if (!res.ok) continue;
+            const data = await res.json();
+            const meta = data?.chart?.result?.[0]?.meta;
+            if (!meta) continue;
+            const price = meta.regularMarketPrice;
+            const prev  = meta.previousClose || meta.chartPreviousClose;
+            if (price && prev) return { price, prev };
+        } catch { continue; }
+    }
+    return null;
+}
+
+function fIndex(v, isIndia) {
+    if (isIndia) return '₹' + Math.round(v).toLocaleString('en-IN');
+    return v >= 10000 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2);
+}
+
+async function updateIndices() {
+    // US
+    const usEl = document.getElementById('usIndices');
+    const usResults = await Promise.all(US_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
+    usEl.innerHTML = usResults.map((item, idx) => {
+        if (!item.r) return '';
+        const chg = item.r.price - item.r.prev;
+        const pct = (chg / item.r.prev) * 100;
+        const cls = chg >= 0 ? 'pos' : 'neg';
+        const sign = chg >= 0 ? '+' : '';
+        return `${idx > 0 ? '<div class="index-divider"></div>' : ''}
+        <div class="index-item">
+            <span class="index-name">${item.name}</span>
+            <span class="index-price">${fIndex(item.r.price, false)}</span>
+            <span class="index-chg ${cls}">${sign}${fIndex(chg, false)} (${sign}${pct.toFixed(2)}%)</span>
+        </div>`;
+    }).join('');
+
+    // India
+    const inEl = document.getElementById('indiaIndices');
+    const inResults = await Promise.all(INDIA_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
+    inEl.innerHTML = inResults.map((item, idx) => {
+        if (!item.r) return '';
+        const chg = item.r.price - item.r.prev;
+        const pct = (chg / item.r.prev) * 100;
+        const cls = chg >= 0 ? 'pos' : 'neg';
+        const sign = chg >= 0 ? '+' : '';
+        return `${idx > 0 ? '<div class="index-divider"></div>' : ''}
+        <div class="index-item">
+            <span class="index-name">${item.name}</span>
+            <span class="index-price">${fIndex(item.r.price, true)}</span>
+            <span class="index-chg ${cls}">${sign}${Math.round(chg).toLocaleString('en-IN')} (${sign}${pct.toFixed(2)}%)</span>
+        </div>`;
+    }).join('');
+
+    // Metals
+    const metEl = document.getElementById('metalIndices');
+    const metResults = await Promise.all(METAL_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
+    metEl.innerHTML = metResults.map((item, idx) => {
+        if (!item.r) return '';
+        const chg = item.r.price - item.r.prev;
+        const pct = (chg / item.r.prev) * 100;
+        const cls = chg >= 0 ? 'pos' : 'neg';
+        const sign = chg >= 0 ? '+' : '';
+        return `${idx > 0 ? '<div class="index-divider"></div>' : ''}
+        <div class="index-item">
+            <span class="index-name">${item.name}</span>
+            <span class="index-price">$${item.r.price.toFixed(2)}</span>
+            <span class="index-chg ${cls}">${sign}$${Math.abs(chg).toFixed(2)} (${sign}${pct.toFixed(2)}%)</span>
+        </div>`;
+    }).join('');
+}
+
+
+async function updateAllPortfolios() {
+    setDot('loading');
+    setBadge('usMarketBadge',    usMarketStatus());
+    setBadge('indiaMarketBadge', indiaMarketStatus());
+    updateIndices();
+
+    let anyError = false;
+
+    // --- US ---
+    if (usPositions.length > 0) {
+        const prices = {};
+        const prevCloses = {};
+        for (const pos of usPositions) {
+            const r = await fetchPrice(pos.symbol, false);
+            if (r.success) {
+                prices[pos.symbol] = r.price;
+                prevCloses[pos.symbol] = r.prevClose;
+                lastPrices[pos.symbol] = r.price;
+            } else if (lastPrices[pos.symbol]) {
+                prices[pos.symbol] = lastPrices[pos.symbol];
+                anyError = true;
+            } else anyError = true;
+        }
+        const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false);
+        document.getElementById('usTable').innerHTML = html;
+        updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);
+    } else {
+        document.getElementById('usTable').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No US positions — add some in Settings.</div>';
+    }
+
+    // --- India ---
+    if (indiaPositions.length > 0) {
+        const prices = {};
+        const prevCloses = {};
+        for (const pos of indiaPositions) {
+            const r = await fetchPrice(pos.symbol, true);
+            if (r.success) {
+                prices[pos.symbol] = r.price;
+                prevCloses[pos.symbol] = r.prevClose;
+                lastPrices[pos.symbol] = r.price;
+            } else if (lastPrices[pos.symbol]) {
+                prices[pos.symbol] = lastPrices[pos.symbol];
+                anyError = true;
+            } else anyError = true;
+        }
+        const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
+        document.getElementById('indiaTableWrap').innerHTML = html;
+        updateSummary('india', fINR, totalValue, totalCost, totalTodayPnL);
+    } else {
+        document.getElementById('indiaTableWrap').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No India positions — add some in Settings.</div>';
+    }
+
+    setDot(anyError ? 'warn' : 'ok');
+    document.getElementById('lastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    updateTabTitle();
+}
+
+function setDot(state) {
+    const d = document.getElementById('statusDot');
+    d.className = 'pulse-dot';
+    if (state === 'ok')      { d.classList.add('active'); }
+    if (state === 'warn')    { d.classList.add('active', 'warn'); }
+    if (state === 'error')   { d.classList.add('error'); }
+    // loading = no extra class, just a dim dot
+}
+
+function updateTabTitle() {
+    try {
+        const usPnL    = parseFloat(document.getElementById('usTotalPnL').textContent.replace(/[^0-9.-]/g,'') || 0);
+        const indiaPnL = parseFloat(document.getElementById('indiaTotalPnL').textContent.replace(/[^0-9.-]/g,'') || 0);
+        const usSign    = document.getElementById('usTotalPnL').textContent.includes('+') ? '+' : '';
+        const indiaSign = document.getElementById('indiaTotalPnL').textContent.includes('+') ? '+' : '-';
+        document.title = `${usSign}$${(usPnL/1000).toFixed(1)}K | ${indiaSign}₹${(Math.abs(indiaPnL)/100000).toFixed(2)}L`;
+    } catch {}
+}
+
+// ─────────────────────────────────────────────
+//  COUNTDOWN
+// ─────────────────────────────────────────────
+function startCountdown() {
+    countdownSecs = REFRESH_SEC;
+    clearInterval(countdownTimer);
+    countdownTimer = setInterval(() => {
+        countdownSecs--;
+        const pct = (countdownSecs / REFRESH_SEC) * 100;
+        document.getElementById('countdownFill').style.width = pct + '%';
+        if (countdownSecs <= 0) {
+            countdownSecs = REFRESH_SEC;
+            updateAllPortfolios().then(startCountdown);
+            clearInterval(countdownTimer);
+        }
+    }, 1000);
+}
+
+// ─────────────────────────────────────────────
+//  SETTINGS MODAL
+// ─────────────────────────────────────────────
+function openSettings() {
+    const c = getSyncConfig();
+    document.getElementById('gistId').value    = c.gistId;
+    document.getElementById('gistToken').value = c.token;
+    renderPosList();
+    document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('open');
+}
+
+function renderPosList() {
+    const usEl = document.getElementById('usPosList');
+    usEl.innerHTML = usPositions.length ? usPositions.map((p, i) => `
+        <div class="pos-item" style="flex-direction:column;align-items:stretch;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <span class="pos-sym us">${p.symbol}</span>${p.note ? `<span class="note-tag">${p.note}</span>` : ''}
+                    <div class="pos-detail">${p.units.toFixed(6)} units @ $${p.purchasePrice.toFixed(2)}</div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button class="edit-btn" onclick="toggleEdit('us',${i})">✏ Edit</button>
+                    <button class="del-btn" onclick="deletePos('us',${i})">Delete</button>
+                </div>
+            </div>
+            <div class="edit-panel" id="editPanel-us-${i}">
+                <div class="edit-panel-row">
+                    <div class="fg"><label>Units</label><input type="number" id="edit-units-us-${i}" value="${p.units}" step="0.000001"></div>
+                    <div class="fg"><label>Avg Price ($)</label><input type="number" id="edit-price-us-${i}" value="${p.purchasePrice}" step="0.01"></div>
+                    <div class="fg"><label>Note</label><input type="text" id="edit-note-us-${i}" value="${p.note||''}" maxlength="4" style="text-transform:uppercase"></div>
+                    <button class="save-btn" onclick="saveEdit('us',${i})">✓ Save</button>
+                </div>
+            </div>
+        </div>`).join('') : '<div class="no-pos">No positions yet.</div>';
+
+    const inEl = document.getElementById('indiaPosList');
+    inEl.innerHTML = indiaPositions.length ? indiaPositions.map((p, i) => `
+        <div class="pos-item" style="flex-direction:column;align-items:stretch;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <span class="pos-sym india">${p.symbol}</span>${p.note ? `<span class="note-tag">${p.note}</span>` : ''}
+                    <div class="pos-detail">${p.units.toLocaleString('en-IN')} units @ ₹${p.purchasePrice.toFixed(2)}</div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button class="edit-btn" onclick="toggleEdit('india',${i})">✏ Edit</button>
+                    <button class="del-btn" onclick="deletePos('india',${i})">Delete</button>
+                </div>
+            </div>
+            <div class="edit-panel" id="editPanel-india-${i}">
+                <div class="edit-panel-row">
+                    <div class="fg"><label>Units</label><input type="number" id="edit-units-india-${i}" value="${p.units}" step="1"></div>
+                    <div class="fg"><label>Avg Price (₹)</label><input type="number" id="edit-price-india-${i}" value="${p.purchasePrice}" step="0.01"></div>
+                    <div class="fg"><label>Note</label><input type="text" id="edit-note-india-${i}" value="${p.note||''}" maxlength="4" style="text-transform:uppercase"></div>
+                    <button class="save-btn" onclick="saveEdit('india',${i})">✓ Save</button>
+                </div>
+            </div>
+        </div>`).join('') : '<div class="no-pos">No positions yet.</div>';
+}
+
+function addUSPos() {
+    const sym   = document.getElementById('usSymbol').value.trim().toUpperCase();
+    const units = parseFloat(document.getElementById('usUnits').value);
+    const price = parseFloat(document.getElementById('usPrice').value);
+    const note  = document.getElementById('usNote').value.trim().toUpperCase().slice(0,4);
+    if (!sym || !units || !price) { alert('Fill in all fields.'); return; }
+    usPositions.push({ symbol: sym, units, purchasePrice: price, note });
+    saveLocal(); renderPosList(); updateAllPortfolios();
+    if (syncConfigured()) pushToGist(true);
+    document.getElementById('usSymbol').value = '';
+    document.getElementById('usUnits').value  = '';
+    document.getElementById('usPrice').value  = '';
+    document.getElementById('usNote').value   = '';
+}
+
+function addIndiaPos() {
+    const sym   = document.getElementById('indiaSymbol').value.trim().toUpperCase();
+    const units = parseFloat(document.getElementById('indiaUnits').value);
+    const price = parseFloat(document.getElementById('indiaPrice').value);
+    if (!sym || !units || !price) { alert('Fill in all fields.'); return; }
+    indiaPositions.push({ symbol: sym, units, purchasePrice: price });
+    saveLocal(); renderPosList(); updateAllPortfolios();
+    if (syncConfigured()) pushToGist(true);
+    document.getElementById('indiaSymbol').value = '';
+    document.getElementById('indiaUnits').value  = '';
+    document.getElementById('indiaPrice').value  = '';
+}
+
+function addIndiaPos() {
+    const sym   = document.getElementById('indiaSymbol').value.trim().toUpperCase();
+    const units = parseFloat(document.getElementById('indiaUnits').value);
+    const price = parseFloat(document.getElementById('indiaPrice').value);
+    const note  = document.getElementById('indiaNote').value.trim().toUpperCase().slice(0,4);
+    if (!sym || !units || !price) { alert('Fill in all fields.'); return; }
+    indiaPositions.push({ symbol: sym, units, purchasePrice: price, note });
+    saveLocal(); renderPosList(); updateAllPortfolios();
+    if (syncConfigured()) pushToGist(true);
+    document.getElementById('indiaSymbol').value = '';
+    document.getElementById('indiaUnits').value  = '';
+    document.getElementById('indiaPrice').value  = '';
+    document.getElementById('indiaNote').value   = '';
+}
+
+function deletePos(region, idx) {
+    if (!confirm('Delete this position?')) return;
+    if (region === 'us') usPositions.splice(idx, 1);
+    else indiaPositions.splice(idx, 1);
+    saveLocal(); renderPosList(); updateAllPortfolios();
+    if (syncConfigured()) pushToGist(true);
+}
+
+function toggleEdit(region, idx) {
+    const panelId = `editPanel-${region}-${idx}`;
+    const panel = document.getElementById(panelId);
+    if (panel) panel.classList.toggle('open');
+}
+
+function saveEdit(region, idx) {
+    const positions = region === 'us' ? usPositions : indiaPositions;
+    const pos = positions[idx];
+    const newUnits = parseFloat(document.getElementById(`edit-units-${region}-${idx}`).value);
+    const newPrice = parseFloat(document.getElementById(`edit-price-${region}-${idx}`).value);
+    const newNote  = document.getElementById(`edit-note-${region}-${idx}`).value.trim().toUpperCase().slice(0,4);
+    if (!newUnits || !newPrice) { alert('Fill in all fields.'); return; }
+    positions[idx] = { ...pos, units: newUnits, purchasePrice: newPrice, note: newNote };
+    saveLocal(); renderPosList(); updateAllPortfolios();
+    if (syncConfigured()) pushToGist(true);
+}
+
+// Close modal on overlay click
+document.getElementById('settingsModal').addEventListener('click', function(e) {
+    if (e.target === this) closeSettings();
+});
+
+// ─────────────────────────────────────────────
+//  INIT
+// Always pull latest data from gist on startup, then start refreshing
+document.addEventListener('DOMContentLoaded', () => {
+    updateSyncBanner();
+    pullFromGist(true).then(() => {
+        updateAllPortfolios().then(startCountdown);
+    });
+});
+</script>
+
+<!-- SYNC BANNER -->
+<div class="sync-banner info" id="syncBanner" style="margin-top:12px;">
+    ☁ Cloud sync not configured — data saved locally. Open Settings → Cloud Sync to enable cross-device sync.
+</div>
+
+</body>
+</html>
