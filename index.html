@@ -1135,6 +1135,10 @@ function minutesUntilClose(market) {
     return Math.max(0, closeMin - t);
 }
 
+function currentTime(tz) {
+    return new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
 function setBadge(id, status, market) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1148,21 +1152,27 @@ function setBadge(id, status, market) {
         el.parentNode.insertBefore(timeLabel, el.nextSibling);
     }
 
+    const tz = market === 'us' ? 'America/New_York' : 'Asia/Kolkata';
+    const tzLabel = market === 'us' ? 'EST' : 'IST';
+    const nowStr = currentTime(tz);
+
     if (status === 'open') {
         el.textContent = 'OPEN';
         const mins = minutesUntilClose(market);
         const hrs  = Math.floor(mins / 60);
         const m    = mins % 60;
-        timeLabel.textContent = hrs > 0 ? `Closes in ${hrs}h ${m}m` : `Closes in ${m}m`;
+        const countdown = hrs > 0 ? `Closes in ${hrs}h ${m}m` : `Closes in ${m}m`;
+        timeLabel.textContent = `${countdown} [${tzLabel}: ${nowStr}]`;
     } else if (status === 'extended') {
         el.textContent = 'EXTENDED';
-        timeLabel.textContent = '';
+        timeLabel.textContent = `[${tzLabel}: ${nowStr}]`;
     } else {
         el.textContent = 'CLOSED';
         const mins = minutesUntilOpen(market);
         const hrs  = Math.floor(mins / 60);
         const m    = mins % 60;
-        timeLabel.textContent = hrs > 0 ? `Opens in ${hrs}h ${m}m` : `Opens in ${m}m`;
+        const countdown = hrs > 0 ? `Opens in ${hrs}h ${m}m` : `Opens in ${m}m`;
+        timeLabel.textContent = `${countdown} [${tzLabel}: ${nowStr}]`;
     }
 }
 
@@ -1394,7 +1404,7 @@ async function updateIndices() {
         return `${idx > 0 ? '<div class="index-divider"></div>' : ''}
         <div class="index-item">
             <span class="index-name">${item.name}</span>
-            <span class="index-price">${fIndex(item.r.price, true)}</span>
+            <span class="index-price">${Math.round(item.r.price).toLocaleString('en-IN')}</span>
             <span class="index-chg ${cls}">${sign}${Math.round(chg).toLocaleString('en-IN')} (${sign}${pct.toFixed(2)}%)</span>
         </div>`;
     }).join('');
@@ -1504,6 +1514,9 @@ function startCountdown() {
         countdownSecs--;
         const pct = (countdownSecs / REFRESH_SEC) * 100;
         document.getElementById('countdownFill').style.width = pct + '%';
+        // Update market badge times every tick
+        setBadge('usMarketBadge',    usMarketStatus(), 'us');
+        setBadge('indiaMarketBadge', indiaMarketStatus(), 'india');
         if (countdownSecs <= 0) {
             countdownSecs = REFRESH_SEC;
             updateAllPortfolios().then(startCountdown);
