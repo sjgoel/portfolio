@@ -1285,23 +1285,23 @@ async function updateAllPortfolios() {
     if (usPositions.length > 0) {
         const prices = {};
         const prevCloses = {};
-        for (const pos of usPositions) {
-            if (usOpen || !lastPrices[pos.symbol]) {
-                const r = await fetchPrice(pos.symbol, false);
+        const uniqueUS = [...new Set(usPositions.map(p => p.symbol))];
+        for (const sym of uniqueUS) {
+            if (usOpen || !lastPrices[sym]) {
+                const r = await fetchPrice(sym, false);
                 if (r.success) {
-                    prices[pos.symbol]     = r.price;
-                    prevCloses[pos.symbol] = r.prevClose;
-                    lastPrices[pos.symbol] = r.price;
-                    lastPrevCloses[pos.symbol] = r.prevClose;
-                } else if (lastPrices[pos.symbol]) {
-                    prices[pos.symbol]     = lastPrices[pos.symbol];
-                    prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+                    prices[sym]     = r.price;
+                    prevCloses[sym] = r.prevClose;
+                    lastPrices[sym] = r.price;
+                    lastPrevCloses[sym] = r.prevClose;
+                } else if (lastPrices[sym]) {
+                    prices[sym]     = lastPrices[sym];
+                    prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
                     anyError = true;
                 } else anyError = true;
             } else {
-                // Market closed — use cached
-                prices[pos.symbol]     = lastPrices[pos.symbol];
-                prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+                prices[sym]     = lastPrices[sym];
+                prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
             }
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false);
@@ -1317,22 +1317,23 @@ async function updateAllPortfolios() {
     if (indiaPositions.length > 0) {
         const prices = {};
         const prevCloses = {};
-        for (const pos of indiaPositions) {
-            if (indiaOpen || !lastPrices[pos.symbol]) {
-                const r = await fetchPrice(pos.symbol, true);
+        const uniqueIndia = [...new Set(indiaPositions.map(p => p.symbol))];
+        for (const sym of uniqueIndia) {
+            if (indiaOpen || !lastPrices[sym]) {
+                const r = await fetchPrice(sym, true);
                 if (r.success) {
-                    prices[pos.symbol]     = r.price;
-                    prevCloses[pos.symbol] = r.prevClose;
-                    lastPrices[pos.symbol] = r.price;
-                    lastPrevCloses[pos.symbol] = r.prevClose;
-                } else if (lastPrices[pos.symbol]) {
-                    prices[pos.symbol]     = lastPrices[pos.symbol];
-                    prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+                    prices[sym]     = r.price;
+                    prevCloses[sym] = r.prevClose;
+                    lastPrices[sym] = r.price;
+                    lastPrevCloses[sym] = r.prevClose;
+                } else if (lastPrices[sym]) {
+                    prices[sym]     = lastPrices[sym];
+                    prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
                     anyError = true;
                 } else anyError = true;
             } else {
-                prices[pos.symbol]     = lastPrices[pos.symbol];
-                prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+                prices[sym]     = lastPrices[sym];
+                prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
             }
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
