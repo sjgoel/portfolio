@@ -1096,19 +1096,20 @@ const priceCache = {}; // persists last known good price across retries
 
 async function fetchPrice(symbol, isIndia) {
     const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
-    const url2d = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=2d&_=${Date.now()}`;
+    const makeUrl = (host) => `https://${host}/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
+    const makeUrl2d = (host) => `https://${host}/v8/finance/chart/${yahooSym}?interval=1d&range=2d&_=${Date.now()}`;
 
     const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url2d)}`,
-        `https://corsproxy.io/?${encodeURIComponent(url2d)}`
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(makeUrl('query1.finance.yahoo.com'))}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(makeUrl('query2.finance.yahoo.com'))}`,
+        `https://corsproxy.io/?${encodeURIComponent(makeUrl('query1.finance.yahoo.com'))}`,
+        `https://corsproxy.io/?${encodeURIComponent(makeUrl('query2.finance.yahoo.com'))}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(makeUrl2d('query1.finance.yahoo.com'))}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(makeUrl('query1.finance.yahoo.com'))}`
     ];
 
-    const tryProxy = async (proxy) => {
-        const res = await fetch(proxy, { signal: AbortSignal.timeout(7000) });
+    const parse = async (proxy) => {
+        const res = await fetch(proxy, { signal: AbortSignal.timeout(6000) });
         if (!res.ok) throw new Error('bad');
         const data = await res.json();
         const result = data?.chart?.result?.[0];
@@ -1127,16 +1128,18 @@ async function fetchPrice(symbol, isIndia) {
         return { success: true, price, prevClose };
     };
 
-    // Race all proxies — use whichever responds first
-    try {
-        const result = await Promise.any(proxies.map(tryProxy));
-        priceCache[symbol] = result; // cache success
-        return result;
-    } catch {
-        // All failed — return cached value if available
-        if (priceCache[symbol]) return priceCache[symbol];
-        return { success: false };
+    // Try proxies in pairs (query1+query2 in parallel), move to next pair if both fail
+    for (let i = 0; i < proxies.length; i += 2) {
+        try {
+            const result = await Promise.any([parse(proxies[i]), parse(proxies[i+1] || proxies[i])]);
+            priceCache[symbol] = result;
+            return result;
+        } catch { continue; }
     }
+
+    // All failed — return cached value if available
+    if (priceCache[symbol]) return priceCache[symbol];
+    return { success: false };
 }
 
 // ─────────────────────────────────────────────
