@@ -852,7 +852,6 @@ async function pullFromGist(silent = false) {
             if (data.indiaPositions !== undefined) indiaPositions = data.indiaPositions;
             saveLocal();
             renderPosList();
-            updateAllPortfolios();
             const ts = data.updated ? new Date(data.updated).toLocaleString() : 'unknown time';
             if (!silent) showSyncMsg(`✓ Pulled from cloud (${ts}).`, 'ok');
             return true;
@@ -1092,28 +1091,24 @@ function setBadge(id, status, market) {
 // ─────────────────────────────────────────────
 //  PRICE FETCHING
 // ─────────────────────────────────────────────
-const priceCache = {}; // persists last known good price across retries
+const priceCache = {};
 
 async function fetchPrice(symbol, isIndia) {
     const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
-    const makeUrl = (host) => `https://${host}/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
-    const makeUrl2d = (host) => `https://${host}/v8/finance/chart/${yahooSym}?interval=1d&range=2d&_=${Date.now()}`;
-
-    const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(makeUrl('query1.finance.yahoo.com'))}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(makeUrl('query2.finance.yahoo.com'))}`,
-        `https://corsproxy.io/?${encodeURIComponent(makeUrl('query1.finance.yahoo.com'))}`,
-        `https://corsproxy.io/?${encodeURIComponent(makeUrl('query2.finance.yahoo.com'))}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(makeUrl2d('query1.finance.yahoo.com'))}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(makeUrl('query1.finance.yahoo.com'))}`
+    const urls = [
+        `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d`,
+        `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d`,
+        `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=2d`
+    ];
+    const proxyHosts = [
+        u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u + '&_=' + Date.now())}`,
+        u => `https://corsproxy.io/?${encodeURIComponent(u + '&_=' + Date.now())}`,
+        u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u + '&_=' + Date.now())}`
     ];
 
-    const parse = async (proxy) => {
-        const res = await fetch(proxy, { signal: AbortSignal.timeout(6000) });
-        if (!res.ok) throw new Error('bad');
-        const data = await res.json();
+    const parse = (data) => {
         const result = data?.chart?.result?.[0];
-        if (!result) throw new Error('no result');
+        if (!result) return null;
         const meta = result.meta;
         let price = meta.regularMarketPrice;
         const closes = result.indicators?.quote?.[0]?.close;
@@ -1124,20 +1119,21 @@ async function fetchPrice(symbol, isIndia) {
         }
         if (!price) price = meta.previousClose;
         const prevClose = meta.previousClose || meta.chartPreviousClose || price;
-        if (!price || price <= 0) throw new Error('no price');
+        if (!price || price <= 0) return null;
         return { success: true, price, prevClose };
     };
 
-    // Try proxies in pairs (query1+query2 in parallel), move to next pair if both fail
-    for (let i = 0; i < proxies.length; i += 2) {
-        try {
-            const result = await Promise.any([parse(proxies[i]), parse(proxies[i+1] || proxies[i])]);
-            priceCache[symbol] = result;
-            return result;
-        } catch { continue; }
+    for (const proxyFn of proxyHosts) {
+        for (const url of urls) {
+            try {
+                const res = await fetch(proxyFn(url), { signal: AbortSignal.timeout(8000) });
+                if (!res.ok) continue;
+                const data = await res.json();
+                const r = parse(data);
+                if (r) { priceCache[symbol] = r; return r; }
+            } catch { continue; }
+        }
     }
-
-    // All failed — return cached value if available
     if (priceCache[symbol]) return priceCache[symbol];
     return { success: false };
 }
@@ -1173,8 +1169,7 @@ function buildTableHTML(positions, prices, prevCloses, isIndia) {
     let totalCost = 0, totalValue = 0, totalTodayPnL = 0;
 
     positions.forEach(pos => {
-        const price = prices[pos.symbol];
-        if (price == null) return;
+        const price = prices[pos.symbol] || pos.purchasePrice;
         const prevClose = prevCloses[pos.symbol] || price;
         const cost      = pos.units * pos.purchasePrice;
         const val       = pos.units * price;
@@ -1280,67 +1275,52 @@ async function updateAllPortfolios() {
     const indiaOpen  = indiaMarketStatus() !== 'closed';
     let anyError = false;
 
-    // ── 1. INVESTMENT SUMMARY (positions) — load first ──────────────
-    // US: only fetch live prices if market is open, else use cached
+    // ── 1. US positions ──────────────────────────────────────────────
     if (usPositions.length > 0) {
-        const prices = {};
-        const prevCloses = {};
+        const prices = {}, prevCloses = {};
         const uniqueUS = [...new Set(usPositions.map(p => p.symbol))];
         for (const sym of uniqueUS) {
-            if (usOpen || !lastPrices[sym]) {
+            const needFetch = usOpen || !lastPrices[sym];
+            if (needFetch) {
                 const r = await fetchPrice(sym, false);
                 if (r.success) {
-                    prices[sym]     = r.price;
-                    prevCloses[sym] = r.prevClose;
                     lastPrices[sym] = r.price;
                     lastPrevCloses[sym] = r.prevClose;
-                } else if (lastPrices[sym]) {
-                    prices[sym]     = lastPrices[sym];
-                    prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
-                    anyError = true;
-                } else anyError = true;
-            } else {
-                prices[sym]     = lastPrices[sym];
-                prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
+                } else { anyError = true; }
             }
+            // Always assign — fallback to purchasePrice only if truly nothing
+            const pos0 = usPositions.find(p => p.symbol === sym);
+            prices[sym]     = lastPrices[sym] || pos0?.purchasePrice || 0;
+            prevCloses[sym] = lastPrevCloses[sym] || prices[sym];
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false);
         updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);
-
-        // ── 2. INVESTMENT DETAILS — render after summary ──────────────
         document.getElementById('usTable').innerHTML = html;
     } else {
         document.getElementById('usTable').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No US positions — add some in Settings.</div>';
     }
 
-    // India
+    // ── 2. India positions ───────────────────────────────────────────
     if (indiaPositions.length > 0) {
-        const prices = {};
-        const prevCloses = {};
+        const prices = {}, prevCloses = {};
         const uniqueIndia = [...new Set(indiaPositions.map(p => p.symbol))];
         for (const sym of uniqueIndia) {
-            if (indiaOpen || !lastPrices[sym]) {
+            const needFetch = indiaOpen || !lastPrices[sym];
+            if (needFetch) {
                 const r = await fetchPrice(sym, true);
                 if (r.success) {
-                    prices[sym]     = r.price;
-                    prevCloses[sym] = r.prevClose;
                     lastPrices[sym] = r.price;
                     lastPrevCloses[sym] = r.prevClose;
-                } else if (lastPrices[sym]) {
-                    prices[sym]     = lastPrices[sym];
-                    prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
-                    anyError = true;
-                } else anyError = true;
-            } else {
-                prices[sym]     = lastPrices[sym];
-                prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
+                } else { anyError = true; }
             }
+            const pos0 = indiaPositions.find(p => p.symbol === sym);
+            prices[sym]     = lastPrices[sym] || pos0?.purchasePrice || 0;
+            prevCloses[sym] = lastPrevCloses[sym] || prices[sym];
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
         updateSummary('india', fINR, totalValue, totalCost + INDIA_WRITEOFFS, totalTodayPnL);
         document.getElementById('indiaTableWrap').innerHTML = html;
     } else {
-        // No positions but still show writeoff in summary
         updateSummary('india', fINR, 0, INDIA_WRITEOFFS, 0);
         document.getElementById('indiaTableWrap').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No India positions — add some in Settings.</div>';
     }
