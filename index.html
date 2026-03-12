@@ -1136,11 +1136,13 @@ function setBadge(id, status, market) {
     if (!el) return;
     el.className = 'market-badge ' + status;
 
-    // Find or create the sibling time label
-    let timeLabel = el.nextElementSibling;
-    if (!timeLabel || !timeLabel.classList.contains('market-time')) {
+    // Use stable ID for time label to avoid duplicate insertion
+    const timeLabelId = id + 'Time';
+    let timeLabel = document.getElementById(timeLabelId);
+    if (!timeLabel) {
         timeLabel = document.createElement('span');
         timeLabel.className = 'market-time';
+        timeLabel.id = timeLabelId;
         el.parentNode.insertBefore(timeLabel, el.nextSibling);
     }
 
