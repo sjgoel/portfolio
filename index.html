@@ -1092,31 +1092,42 @@ function setBadge(id, status, market) {
 // ─────────────────────────────────────────────
 async function fetchPrice(symbol, isIndia) {
     const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
+    const yUrl1 = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
+    const yUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=5d&_=${Date.now()}`;
+
     const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl1)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl2)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl1)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl2)}`,
+        `https://thingproxy.freeboard.io/fetch/${yUrl1}`,
+        `https://thingproxy.freeboard.io/fetch/${yUrl2}`
     ];
+
+    const parse = (data) => {
+        const result = data?.chart?.result?.[0];
+        if (!result) return null;
+        const meta = result.meta;
+        let price = meta.regularMarketPrice;
+        const closes = result.indicators?.quote?.[0]?.close;
+        if (closes) {
+            for (let i = closes.length - 1; i >= 0; i--) {
+                if (closes[i] != null) { price = closes[i]; break; }
+            }
+        }
+        if (!price) price = meta.previousClose;
+        const prevClose = meta.previousClose || meta.chartPreviousClose || price;
+        if (price && price > 0) return { success: true, price, prevClose };
+        return null;
+    };
 
     for (const proxy of proxies) {
         try {
             const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
             if (!res.ok) continue;
             const data = await res.json();
-            const result = data?.chart?.result?.[0];
-            if (!result) continue;
-            const meta = result.meta;
-            let price = meta.regularMarketPrice;
-            const closes = result.indicators?.quote?.[0]?.close;
-            if (closes) {
-                for (let i = closes.length - 1; i >= 0; i--) {
-                    if (closes[i] != null) { price = closes[i]; break; }
-                }
-            }
-            if (!price) price = meta.previousClose;
-            const prevClose = meta.previousClose || meta.chartPreviousClose || price;
-            if (price && price > 0) return { success: true, price, prevClose };
+            const r = parse(data);
+            if (r) return r;
         } catch { continue; }
     }
     return { success: false };
@@ -1273,8 +1284,8 @@ async function updateAllPortfolios() {
                 } else { anyError = true; }
             }
             // Market closed + cache exists → reuse cache, no fetch
-            prices[sym]     = lastPrices[sym] || 0;
-            prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym] || 0;
+            prices[sym]     = lastPrices[sym];
+            prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false);
         updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);  // summary first
@@ -1295,8 +1306,8 @@ async function updateAllPortfolios() {
                     lastPrevCloses[sym] = r.prevClose;
                 } else { anyError = true; }
             }
-            prices[sym]     = lastPrices[sym] || 0;
-            prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym] || 0;
+            prices[sym]     = lastPrices[sym];
+            prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
         // Add BINNY writeoff to invested cost → reduces Total P&L by ₹44,865. Never shown in table.
