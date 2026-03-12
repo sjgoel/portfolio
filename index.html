@@ -1094,31 +1094,23 @@ function minutesUntilOpen(market) {
     const openHour = market === 'us' ? 9  : 9;
     const openMin  = market === 'us' ? 30 : 15;
 
-    // Start checking from today in the target timezone
+    // Get current time in target timezone
     const local = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+    // tzOffset: difference between UTC wall-clock and tz wall-clock in ms
+    const tzOffset = now.getTime() - local.getTime();
+
     let checkDate = new Date(local.getFullYear(), local.getMonth(), local.getDate());
 
     for (let i = 0; i < 10; i++) {
         const day = checkDate.getDay();
         const dk  = dateKey(checkDate);
         if (day !== 0 && day !== 6 && !holidays.has(dk)) {
-            // Build the open time on this day in the target timezone
-            const openStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth()+1).padStart(2,'0')}-${String(checkDate.getDate()).padStart(2,'0')}T${String(openHour).padStart(2,'0')}:${String(openMin).padStart(2,'0')}:00`;
-            // Parse as local timezone
-            const openLocal = new Date(new Date(openStr).toLocaleString('en-US', { timeZone: tz }));
-            // Reconstruct as UTC equivalent
-            const offset = new Date(openStr + '+00:00') - new Date(new Date(openStr + '+00:00').toLocaleString('en-US', { timeZone: tz }));
-            const openUTC = new Date(new Date(openStr + '+00:00').getTime() + offset);
-
-            // Simpler: just compute using known timezone offsets
-            // Use the difference between now and the target open time
-            const tzDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-            const tzOffset = now - tzDate; // ms offset between UTC-local and tz-local
+            // Open time in target tz as a "fake local" Date
             const openTZ = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate(), openHour, openMin, 0);
-            const openActual = new Date(openTZ.getTime() + tzOffset);
-
-            if (openActual > now) {
-                return Math.round((openActual - now) / 60000);
+            // Convert to real UTC
+            const openUTC = new Date(openTZ.getTime() + tzOffset);
+            if (openUTC > now) {
+                return Math.round((openUTC - now) / 60000);
             }
         }
         checkDate = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate() + 1);
@@ -1507,23 +1499,35 @@ function updateTabTitle() {
 // ─────────────────────────────────────────────
 //  COUNTDOWN
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  COUNTDOWN
+// ─────────────────────────────────────────────
 function startCountdown() {
     countdownSecs = REFRESH_SEC;
     clearInterval(countdownTimer);
     countdownTimer = setInterval(() => {
         countdownSecs--;
-        const pct = (countdownSecs / REFRESH_SEC) * 100;
+        const pct = Math.max(0, (countdownSecs / REFRESH_SEC) * 100);
         document.getElementById('countdownFill').style.width = pct + '%';
         // Update market badge times every tick
         setBadge('usMarketBadge',    usMarketStatus(), 'us');
         setBadge('indiaMarketBadge', indiaMarketStatus(), 'india');
         if (countdownSecs <= 0) {
-            countdownSecs = REFRESH_SEC;
-            updateAllPortfolios().then(startCountdown);
-            clearInterval(countdownTimer);
+            clearInterval(countdownTimer); // clear FIRST before async
+            countdownTimer = null;
+            updateAllPortfolios().then(() => startCountdown());
         }
     }, 1000);
 }
+
+// Refresh immediately when tab becomes visible again after being in background
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        updateAllPortfolios().then(() => startCountdown());
+    }
+});
 
 // ─────────────────────────────────────────────
 //  SETTINGS MODAL
