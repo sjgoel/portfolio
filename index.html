@@ -671,6 +671,7 @@
     </div>
     <div class="header-meta">
         <div class="countdown-bar"><div class="countdown-fill" id="countdownFill" style="width:100%"></div></div>
+        <button class="btn" onclick="manualRefresh()" id="refreshBtn">↺ Refresh</button>
         <button class="btn primary" onclick="openSettings()">⚙ Manage</button>
     </div>
 </div>
@@ -843,7 +844,9 @@
 // ─────────────────────────────────────────────
 //  LAST ACCESSED INFO
 // ─────────────────────────────────────────────
-const REFRESH_SEC = 30;
+const REFRESH_SEC     = 30;
+const INDICES_REFRESH = 120; // indices refresh every 2 minutes
+let indicesLastFetch  = 0;
 
 const DEFAULT_US = [
     { symbol: 'SIVR', units: 463.137017, purchasePrice: 73.41, note: 'ROBN' },
@@ -856,6 +859,7 @@ const DEFAULT_INDIA = [];
 let usPositions    = JSON.parse(localStorage.getItem('usPositions'))    || DEFAULT_US;
 let indiaPositions = JSON.parse(localStorage.getItem('indiaPositions')) || DEFAULT_INDIA;
 let lastPrices     = {};
+let lastPrevCloses = {};
 let countdownSecs  = REFRESH_SEC;
 let countdownTimer = null;
 let refreshTimer   = null;
@@ -933,7 +937,7 @@ async function pullFromGist(silent = false) {
             if (data.indiaPositions !== undefined) indiaPositions = data.indiaPositions;
             saveLocal();
             renderPosList();
-            updateAllPortfolios();
+            updateAllPortfolios(true);
             const ts = data.updated ? new Date(data.updated).toLocaleString() : 'unknown time';
             if (!silent) showSyncMsg(`✓ Pulled from cloud (${ts}).`, 'ok');
             return true;
@@ -1422,54 +1426,73 @@ async function updateIndices() {
 }
 
 
-async function updateAllPortfolios() {
+async function updateAllPortfolios(forceIndices = false) {
     setDot('loading');
     setBadge('usMarketBadge',    usMarketStatus(), 'us');
     setBadge('indiaMarketBadge', indiaMarketStatus(), 'india');
-    updateIndices();
 
+    const usOpen     = usMarketStatus()    !== 'closed';
+    const indiaOpen  = indiaMarketStatus() !== 'closed';
     let anyError = false;
 
-    // --- US ---
+    // ── 1. INVESTMENT SUMMARY (positions) — load first ──────────────
+    // US: only fetch live prices if market is open, else use cached
     if (usPositions.length > 0) {
         const prices = {};
         const prevCloses = {};
         for (const pos of usPositions) {
-            const r = await fetchPrice(pos.symbol, false);
-            if (r.success) {
-                prices[pos.symbol] = r.price;
-                prevCloses[pos.symbol] = r.prevClose;
-                lastPrices[pos.symbol] = r.price;
-            } else if (lastPrices[pos.symbol]) {
-                prices[pos.symbol] = lastPrices[pos.symbol];
-                anyError = true;
-            } else anyError = true;
+            if (usOpen || !lastPrices[pos.symbol]) {
+                const r = await fetchPrice(pos.symbol, false);
+                if (r.success) {
+                    prices[pos.symbol]     = r.price;
+                    prevCloses[pos.symbol] = r.prevClose;
+                    lastPrices[pos.symbol] = r.price;
+                    lastPrevCloses[pos.symbol] = r.prevClose;
+                } else if (lastPrices[pos.symbol]) {
+                    prices[pos.symbol]     = lastPrices[pos.symbol];
+                    prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+                    anyError = true;
+                } else anyError = true;
+            } else {
+                // Market closed — use cached
+                prices[pos.symbol]     = lastPrices[pos.symbol];
+                prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+            }
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false);
-        document.getElementById('usTable').innerHTML = html;
         updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);
+
+        // ── 2. INVESTMENT DETAILS — render after summary ──────────────
+        document.getElementById('usTable').innerHTML = html;
     } else {
         document.getElementById('usTable').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No US positions — add some in Settings.</div>';
     }
 
-    // --- India ---
+    // India
     if (indiaPositions.length > 0) {
         const prices = {};
         const prevCloses = {};
         for (const pos of indiaPositions) {
-            const r = await fetchPrice(pos.symbol, true);
-            if (r.success) {
-                prices[pos.symbol] = r.price;
-                prevCloses[pos.symbol] = r.prevClose;
-                lastPrices[pos.symbol] = r.price;
-            } else if (lastPrices[pos.symbol]) {
-                prices[pos.symbol] = lastPrices[pos.symbol];
-                anyError = true;
-            } else anyError = true;
+            if (indiaOpen || !lastPrices[pos.symbol]) {
+                const r = await fetchPrice(pos.symbol, true);
+                if (r.success) {
+                    prices[pos.symbol]     = r.price;
+                    prevCloses[pos.symbol] = r.prevClose;
+                    lastPrices[pos.symbol] = r.price;
+                    lastPrevCloses[pos.symbol] = r.prevClose;
+                } else if (lastPrices[pos.symbol]) {
+                    prices[pos.symbol]     = lastPrices[pos.symbol];
+                    prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+                    anyError = true;
+                } else anyError = true;
+            } else {
+                prices[pos.symbol]     = lastPrices[pos.symbol];
+                prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+            }
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
-        document.getElementById('indiaTableWrap').innerHTML = html;
         updateSummary('india', fINR, totalValue, totalCost, totalTodayPnL);
+        document.getElementById('indiaTableWrap').innerHTML = html;
     } else {
         document.getElementById('indiaTableWrap').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No India positions — add some in Settings.</div>';
     }
@@ -1477,6 +1500,13 @@ async function updateAllPortfolios() {
     setDot(anyError ? 'warn' : 'ok');
     document.getElementById('lastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     updateTabTitle();
+
+    // ── 3. INDICES — refresh only every 2 min (or forced) ───────────
+    const now = Date.now();
+    if (forceIndices || (now - indicesLastFetch) >= INDICES_REFRESH * 1000) {
+        indicesLastFetch = now;
+        updateIndices();
+    }
 }
 
 function setDot(state) {
@@ -1522,12 +1552,19 @@ function startCountdown() {
     }, 1000);
 }
 
+function manualRefresh() {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+    indicesLastFetch = 0; // force indices refresh
+    updateAllPortfolios(true).then(() => startCountdown());
+}
+
 // Refresh immediately when tab becomes visible again after being in background
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
         clearInterval(countdownTimer);
         countdownTimer = null;
-        updateAllPortfolios().then(() => startCountdown());
+        updateAllPortfolios(true).then(() => startCountdown());
     }
 });
 
@@ -1674,7 +1711,7 @@ document.getElementById('settingsModal').addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', () => {
     updateSyncBanner();
     pullFromGist(true).then(() => {
-        updateAllPortfolios().then(startCountdown);
+        updateAllPortfolios(true).then(startCountdown);
     });
 });
 </script>
