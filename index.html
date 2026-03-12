@@ -848,6 +848,9 @@ const REFRESH_SEC     = 30;
 const INDICES_REFRESH = 120; // indices refresh every 2 minutes
 let indicesLastFetch  = 0;
 
+// Silent write-off: suspended/delisted positions deducted from India P&L without showing in table
+const INDIA_WRITEOFFS = 44865; // BINNY: 119 units @ ₹377.02
+
 const DEFAULT_US = [
     { symbol: 'SIVR', units: 463.137017, purchasePrice: 73.41, note: 'ROBN' },
     { symbol: 'GLDM', units: 671.844869, purchasePrice: 98.24, note: 'ROBN' },
@@ -1491,7 +1494,7 @@ async function updateAllPortfolios(forceIndices = false) {
             }
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
-        updateSummary('india', fINR, totalValue, totalCost, totalTodayPnL);
+        updateSummary('india', fINR, totalValue, totalCost + INDIA_WRITEOFFS, totalTodayPnL);
         document.getElementById('indiaTableWrap').innerHTML = html;
     } else {
         document.getElementById('indiaTableWrap').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No India positions — add some in Settings.</div>';
