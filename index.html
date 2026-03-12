@@ -667,7 +667,7 @@
             <div class="pulse-dot active" id="statusDot"></div>
             <span class="header-title">PORTFOLIO</span>
         </div>
-        <span class="last-update" id="lastUpdate" style="padding-left:15px;">–</span>
+        <span class="last-update" id="lastUpdate" style="padding-left:15px;white-space:nowrap;">–</span>
     </div>
     <div class="header-meta">
         <div class="countdown-bar"><div class="countdown-fill" id="countdownFill" style="width:100%"></div></div>
@@ -1348,6 +1348,8 @@ const INDIA_INDICES = [ { sym: '^NSEI',  name: 'NSE'    },
 const METAL_INDICES = [ { sym: 'GC=F',   name: 'GOLD'   },
                         { sym: 'SI=F',   name: 'SILVER' } ];
 
+const indexCache = {}; // cache last good index values
+
 async function fetchIndexPrice(sym) {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d&_=${Date.now()}`;
     const proxies = [
@@ -1355,19 +1357,25 @@ async function fetchIndexPrice(sym) {
         `https://corsproxy.io/?${encodeURIComponent(url)}`,
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
     ];
-    for (const proxy of proxies) {
-        try {
-            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-            if (!res.ok) continue;
+
+    // Race all proxies in parallel — use whichever responds first
+    try {
+        const result = await Promise.any(proxies.map(async proxy => {
+            const res = await fetch(proxy, { signal: AbortSignal.timeout(6000) });
+            if (!res.ok) throw new Error('bad response');
             const data = await res.json();
             const meta = data?.chart?.result?.[0]?.meta;
-            if (!meta) continue;
+            if (!meta) throw new Error('no meta');
             const price = meta.regularMarketPrice;
             const prev  = meta.previousClose || meta.chartPreviousClose;
-            if (price && prev) return { price, prev };
-        } catch { continue; }
+            if (!price || !prev) throw new Error('no price');
+            return { price, prev };
+        }));
+        indexCache[sym] = result; // cache success
+        return result;
+    } catch {
+        return indexCache[sym] || null; // return cached if all fail
     }
-    return null;
 }
 
 function fIndex(v, isIndia) {
@@ -1376,11 +1384,22 @@ function fIndex(v, isIndia) {
 }
 
 async function updateIndices() {
-    // US
+    // Show loading state if panels are empty
+    ['usIndices','metalIndices','indiaIndices'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.querySelector('.index-item')) {
+            el.innerHTML = '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading…</span>';
+        }
+    });
+
+    const renderPanel = (el, results, renderFn) => {
+        const html = results.map((item, idx) => item.r ? renderFn(item, idx) : '').join('');
+        if (html.trim()) el.innerHTML = html; // only overwrite if we got data
+    };
+
     const usEl = document.getElementById('usIndices');
     const usResults = await Promise.all(US_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
-    usEl.innerHTML = usResults.map((item, idx) => {
-        if (!item.r) return '';
+    renderPanel(usEl, usResults, (item, idx) => {
         const chg = item.r.price - item.r.prev;
         const pct = (chg / item.r.prev) * 100;
         const cls = chg >= 0 ? 'pos' : 'neg';
@@ -1391,13 +1410,11 @@ async function updateIndices() {
             <span class="index-price">${fIndex(item.r.price, false)}</span>
             <span class="index-chg ${cls}">${sign}${fIndex(chg, false)} (${sign}${pct.toFixed(2)}%)</span>
         </div>`;
-    }).join('');
+    });
 
-    // India
     const inEl = document.getElementById('indiaIndices');
     const inResults = await Promise.all(INDIA_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
-    inEl.innerHTML = inResults.map((item, idx) => {
-        if (!item.r) return '';
+    renderPanel(inEl, inResults, (item, idx) => {
         const chg = item.r.price - item.r.prev;
         const pct = (chg / item.r.prev) * 100;
         const cls = chg >= 0 ? 'pos' : 'neg';
@@ -1408,13 +1425,11 @@ async function updateIndices() {
             <span class="index-price">${Math.round(item.r.price).toLocaleString('en-IN')}</span>
             <span class="index-chg ${cls}">${sign}${Math.round(chg).toLocaleString('en-IN')} (${sign}${pct.toFixed(2)}%)</span>
         </div>`;
-    }).join('');
+    });
 
-    // Metals
     const metEl = document.getElementById('metalIndices');
     const metResults = await Promise.all(METAL_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
-    metEl.innerHTML = metResults.map((item, idx) => {
-        if (!item.r) return '';
+    renderPanel(metEl, metResults, (item, idx) => {
         const chg = item.r.price - item.r.prev;
         const pct = (chg / item.r.prev) * 100;
         const cls = chg >= 0 ? 'pos' : 'neg';
@@ -1425,7 +1440,7 @@ async function updateIndices() {
             <span class="index-price">$${item.r.price >= 1000 ? item.r.price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : item.r.price.toFixed(2)}</span>
             <span class="index-chg ${cls}">${sign}$${Math.abs(chg).toFixed(2)} (${sign}${pct.toFixed(2)}%)</span>
         </div>`;
-    }).join('');
+    });
 }
 
 
@@ -1497,6 +1512,8 @@ async function updateAllPortfolios(forceIndices = false) {
         updateSummary('india', fINR, totalValue, totalCost + INDIA_WRITEOFFS, totalTodayPnL);
         document.getElementById('indiaTableWrap').innerHTML = html;
     } else {
+        // No positions but still show writeoff in summary
+        updateSummary('india', fINR, 0, INDIA_WRITEOFFS, 0);
         document.getElementById('indiaTableWrap').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No India positions — add some in Settings.</div>';
     }
 
