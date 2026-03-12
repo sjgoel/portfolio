@@ -592,70 +592,6 @@
             th:first-child, td:first-child { padding-left: 8px; }
             td:last-child, th:last-child { padding-right: 8px; }
         }
-        /* ─── MARKET INDICES BAR ─────────────── */
-        .indices-bar {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        .indices-panel {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 6px 14px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-            display: flex;
-            align-items: center;
-            gap: 0;
-            height: 40px;
-            overflow: hidden;
-        }
-        .indices-panel.us-panel     { border-left: 4px solid var(--us); }
-        .indices-panel.india-panel  { border-left: 4px solid var(--india); }
-        .indices-panel.metals-panel { border-left: 4px solid #d97706; }
-
-        .indices-label { display: none; }
-
-        .indices-list {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            align-items: stretch;
-            flex: 1;
-            overflow: hidden;
-        }
-        .index-item {
-            display: flex;
-            flex-direction: row;
-            align-items: baseline;
-            gap: 0;
-            white-space: nowrap;
-        }
-        .index-name  {
-            font-family: var(--mono);
-            font-size: 9px;
-            font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            width: 52px;
-            min-width: 52px;
-            text-align: right;
-            margin-right: 8px;
-            flex-shrink: 0;
-        }
-        .index-price { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); margin-right: 6px; }
-        .index-chg   { font-family: var(--mono); font-size: 10px; font-weight: 500; }
-        .index-chg.pos { color: var(--green); }
-        .index-chg.neg { color: var(--red); }
-        .index-divider { display: none; }
-
-        @media (max-width: 600px) {
-            .indices-bar { grid-template-columns: 1fr !important; }
-            .indices-panel { height: auto; padding: 6px 14px; }
-            .index-chg { font-size: 9px; }
-        }
     </style>
 </head>
 <body>
@@ -676,27 +612,6 @@
     </div>
 </div>
 
-<!-- MARKET INDICES BAR -->
-<div class="indices-bar">
-    <div class="indices-panel us-panel">
-        <span class="indices-label">🇺🇸 US</span>
-        <div class="indices-list" id="usIndices">
-            <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading…</span>
-        </div>
-    </div>
-    <div class="indices-panel metals-panel">
-        <span class="indices-label" style="visibility:hidden;">⠀⠀⠀</span>
-        <div class="indices-list" id="metalIndices">
-            <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading…</span>
-        </div>
-    </div>
-    <div class="indices-panel india-panel">
-        <span class="indices-label">🇮🇳 India</span>
-        <div class="indices-list" id="indiaIndices">
-            <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Loading…</span>
-        </div>
-    </div>
-</div>
 
 <!-- INVESTMENTS SUMMARY LABEL -->
 <div class="section-label">INVESTMENTS SUMMARY</div>
@@ -845,8 +760,6 @@
 //  LAST ACCESSED INFO
 // ─────────────────────────────────────────────
 const REFRESH_SEC     = 30;
-const INDICES_REFRESH = 120; // indices refresh every 2 minutes
-let indicesLastFetch  = 0;
 
 const DEFAULT_US = [
     { symbol: 'SIVR', units: 463.137017, purchasePrice: 73.41, note: 'ROBN' },
@@ -937,7 +850,7 @@ async function pullFromGist(silent = false) {
             if (data.indiaPositions !== undefined) indiaPositions = data.indiaPositions;
             saveLocal();
             renderPosList();
-            updateAllPortfolios(true);
+            updateAllPortfolios();
             const ts = data.updated ? new Date(data.updated).toLocaleString() : 'unknown time';
             if (!silent) showSyncMsg(`✓ Pulled from cloud (${ts}).`, 'ok');
             return true;
@@ -1335,178 +1248,69 @@ function updateSummary(prefix, fmt, totalValue, totalCost, totalTodayPnL) {
     if (todayEl){ todayEl.textContent = (totalTodayPnL>=0?'+':'') + fmt(totalTodayPnL); todayEl.className = 'sc-value ' + (totalTodayPnL >= 0 ? 'green' : 'red'); }
 }
 
-// ─────────────────────────────────────────────
-//  MARKET INDICES
-// ─────────────────────────────────────────────
-const US_INDICES    = [ { sym: '^DJI',   name: 'DOW'    },
-                        { sym: '^GSPC',  name: 'S&P'    } ];
-const INDIA_INDICES = [ { sym: '^NSEI',  name: 'NSE'    },
-                        { sym: '^BSESN', name: 'BSE'    } ];
-const METAL_INDICES = [ { sym: 'GC=F',   name: 'GOLD'   },
-                        { sym: 'SI=F',   name: 'SILVER' } ];
+const INDIA_WRITEOFFS = 44865; // BINNY: 119 units @ ₹377.02 — delisted, value = ₹0, silently deducted
 
-async function fetchIndexPrice(sym) {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=2d&_=${Date.now()}`;
-    const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
-    ];
-    for (const proxy of proxies) {
-        try {
-            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-            if (!res.ok) continue;
-            const data = await res.json();
-            const meta = data?.chart?.result?.[0]?.meta;
-            if (!meta) continue;
-            const price = meta.regularMarketPrice;
-            const prev  = meta.previousClose || meta.chartPreviousClose;
-            if (price && prev) return { price, prev };
-        } catch { continue; }
-    }
-    return null;
-}
-
-function fIndex(v, isIndia) {
-    if (isIndia) return '₹' + Math.round(v).toLocaleString('en-IN');
-    return v >= 1000 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2);
-}
-
-async function updateIndices() {
-    // US
-    const usEl = document.getElementById('usIndices');
-    const usResults = await Promise.all(US_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
-    usEl.innerHTML = usResults.map((item, idx) => {
-        if (!item.r) return '';
-        const chg = item.r.price - item.r.prev;
-        const pct = (chg / item.r.prev) * 100;
-        const cls = chg >= 0 ? 'pos' : 'neg';
-        const sign = chg >= 0 ? '+' : '';
-        return `${idx > 0 ? '<div class="index-divider"></div>' : ''}
-        <div class="index-item">
-            <span class="index-name">${item.name}</span>
-            <span class="index-price">${fIndex(item.r.price, false)}</span>
-            <span class="index-chg ${cls}">${sign}${fIndex(chg, false)} (${sign}${pct.toFixed(2)}%)</span>
-        </div>`;
-    }).join('');
-
-    // India
-    const inEl = document.getElementById('indiaIndices');
-    const inResults = await Promise.all(INDIA_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
-    inEl.innerHTML = inResults.map((item, idx) => {
-        if (!item.r) return '';
-        const chg = item.r.price - item.r.prev;
-        const pct = (chg / item.r.prev) * 100;
-        const cls = chg >= 0 ? 'pos' : 'neg';
-        const sign = chg >= 0 ? '+' : '';
-        return `${idx > 0 ? '<div class="index-divider"></div>' : ''}
-        <div class="index-item">
-            <span class="index-name">${item.name}</span>
-            <span class="index-price">${Math.round(item.r.price).toLocaleString('en-IN')}</span>
-            <span class="index-chg ${cls}">${sign}${Math.round(chg).toLocaleString('en-IN')} (${sign}${pct.toFixed(2)}%)</span>
-        </div>`;
-    }).join('');
-
-    // Metals
-    const metEl = document.getElementById('metalIndices');
-    const metResults = await Promise.all(METAL_INDICES.map(i => fetchIndexPrice(i.sym).then(r => ({ ...i, r }))));
-    metEl.innerHTML = metResults.map((item, idx) => {
-        if (!item.r) return '';
-        const chg = item.r.price - item.r.prev;
-        const pct = (chg / item.r.prev) * 100;
-        const cls = chg >= 0 ? 'pos' : 'neg';
-        const sign = chg >= 0 ? '+' : '';
-        return `${idx > 0 ? '<div class="index-divider"></div>' : ''}
-        <div class="index-item">
-            <span class="index-name">${item.name}</span>
-            <span class="index-price">$${item.r.price >= 1000 ? item.r.price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : item.r.price.toFixed(2)}</span>
-            <span class="index-chg ${cls}">${sign}$${Math.abs(chg).toFixed(2)} (${sign}${pct.toFixed(2)}%)</span>
-        </div>`;
-    }).join('');
-}
-
-
-async function updateAllPortfolios(forceIndices = false) {
+async function updateAllPortfolios() {
     setDot('loading');
     setBadge('usMarketBadge',    usMarketStatus(), 'us');
     setBadge('indiaMarketBadge', indiaMarketStatus(), 'india');
 
-    const usOpen     = usMarketStatus()    !== 'closed';
-    const indiaOpen  = indiaMarketStatus() !== 'closed';
+    const usOpen    = usMarketStatus()    !== 'closed';
+    const indiaOpen = indiaMarketStatus() !== 'closed';
     let anyError = false;
 
-    // ── 1. INVESTMENT SUMMARY (positions) — load first ──────────────
-    // US: only fetch live prices if market is open, else use cached
+    // ── 1. US SUMMARY — fetch prices, render summary card immediately ──
     if (usPositions.length > 0) {
-        const prices = {};
-        const prevCloses = {};
-        for (const pos of usPositions) {
-            if (usOpen || !lastPrices[pos.symbol]) {
-                const r = await fetchPrice(pos.symbol, false);
+        const prices = {}, prevCloses = {};
+        const uniqueUS = [...new Set(usPositions.map(p => p.symbol))];
+        for (const sym of uniqueUS) {
+            if (usOpen || !lastPrices[sym]) {
+                // Only hit Yahoo if market open OR we have no cached price yet
+                const r = await fetchPrice(sym, false);
                 if (r.success) {
-                    prices[pos.symbol]     = r.price;
-                    prevCloses[pos.symbol] = r.prevClose;
-                    lastPrices[pos.symbol] = r.price;
-                    lastPrevCloses[pos.symbol] = r.prevClose;
-                } else if (lastPrices[pos.symbol]) {
-                    prices[pos.symbol]     = lastPrices[pos.symbol];
-                    prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
-                    anyError = true;
-                } else anyError = true;
-            } else {
-                // Market closed — use cached
-                prices[pos.symbol]     = lastPrices[pos.symbol];
-                prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+                    lastPrices[sym]     = r.price;
+                    lastPrevCloses[sym] = r.prevClose;
+                } else { anyError = true; }
             }
+            // Market closed + cache exists → reuse cache, no fetch
+            prices[sym]     = lastPrices[sym] || 0;
+            prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym] || 0;
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false);
-        updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);
-
-        // ── 2. INVESTMENT DETAILS — render after summary ──────────────
-        document.getElementById('usTable').innerHTML = html;
+        updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);  // summary first
+        document.getElementById('usTable').innerHTML = html;              // details second
     } else {
         document.getElementById('usTable').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No US positions — add some in Settings.</div>';
     }
 
-    // India
+    // ── 2. INDIA SUMMARY — same pattern, deduct BINNY writeoff silently ──
     if (indiaPositions.length > 0) {
-        const prices = {};
-        const prevCloses = {};
-        for (const pos of indiaPositions) {
-            if (indiaOpen || !lastPrices[pos.symbol]) {
-                const r = await fetchPrice(pos.symbol, true);
+        const prices = {}, prevCloses = {};
+        const uniqueIndia = [...new Set(indiaPositions.map(p => p.symbol))];
+        for (const sym of uniqueIndia) {
+            if (indiaOpen || !lastPrices[sym]) {
+                const r = await fetchPrice(sym, true);
                 if (r.success) {
-                    prices[pos.symbol]     = r.price;
-                    prevCloses[pos.symbol] = r.prevClose;
-                    lastPrices[pos.symbol] = r.price;
-                    lastPrevCloses[pos.symbol] = r.prevClose;
-                } else if (lastPrices[pos.symbol]) {
-                    prices[pos.symbol]     = lastPrices[pos.symbol];
-                    prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
-                    anyError = true;
-                } else anyError = true;
-            } else {
-                prices[pos.symbol]     = lastPrices[pos.symbol];
-                prevCloses[pos.symbol] = lastPrevCloses[pos.symbol] || lastPrices[pos.symbol];
+                    lastPrices[sym]     = r.price;
+                    lastPrevCloses[sym] = r.prevClose;
+                } else { anyError = true; }
             }
+            prices[sym]     = lastPrices[sym] || 0;
+            prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym] || 0;
         }
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
-        updateSummary('india', fINR, totalValue, totalCost, totalTodayPnL);
+        // Add BINNY writeoff to invested cost → reduces Total P&L by ₹44,865. Never shown in table.
+        updateSummary('india', fINR, totalValue, totalCost + INDIA_WRITEOFFS, totalTodayPnL);
         document.getElementById('indiaTableWrap').innerHTML = html;
     } else {
+        // No positions configured yet — still show the writeoff
+        updateSummary('india', fINR, 0, INDIA_WRITEOFFS, 0);
         document.getElementById('indiaTableWrap').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No India positions — add some in Settings.</div>';
     }
 
     setDot(anyError ? 'warn' : 'ok');
     document.getElementById('lastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     updateTabTitle();
-
-    // ── 3. INDICES — refresh only every 2 min (or forced) ───────────
-    const now = Date.now();
-    if (forceIndices || (now - indicesLastFetch) >= INDICES_REFRESH * 1000) {
-        indicesLastFetch = now;
-        updateIndices();
-    }
 }
 
 function setDot(state) {
@@ -1555,8 +1359,7 @@ function startCountdown() {
 function manualRefresh() {
     clearInterval(countdownTimer);
     countdownTimer = null;
-    indicesLastFetch = 0; // force indices refresh
-    updateAllPortfolios(true).then(() => startCountdown());
+    updateAllPortfolios().then(() => startCountdown());
 }
 
 // Refresh immediately when tab becomes visible again after being in background
@@ -1564,7 +1367,7 @@ document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
         clearInterval(countdownTimer);
         countdownTimer = null;
-        updateAllPortfolios(true).then(() => startCountdown());
+        updateAllPortfolios().then(() => startCountdown());
     }
 });
 
@@ -1711,7 +1514,7 @@ document.getElementById('settingsModal').addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', () => {
     updateSyncBanner();
     pullFromGist(true).then(() => {
-        updateAllPortfolios(true).then(startCountdown);
+        updateAllPortfolios().then(startCountdown);
     });
 });
 </script>
