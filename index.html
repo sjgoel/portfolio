@@ -1092,36 +1092,51 @@ function setBadge(id, status, market) {
 // ─────────────────────────────────────────────
 //  PRICE FETCHING
 // ─────────────────────────────────────────────
+const priceCache = {}; // persists last known good price across retries
+
 async function fetchPrice(symbol, isIndia) {
     const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
+    const url2d = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=2d&_=${Date.now()}`;
+
     const proxies = [
         `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
         `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url2d)}`,
+        `https://corsproxy.io/?${encodeURIComponent(url2d)}`
     ];
 
-    for (const proxy of proxies) {
-        try {
-            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-            if (!res.ok) continue;
-            const data = await res.json();
-            const result = data?.chart?.result?.[0];
-            if (!result) continue;
-            const meta = result.meta;
-            let price = meta.regularMarketPrice;
-            const closes = result.indicators?.quote?.[0]?.close;
-            if (closes) {
-                for (let i = closes.length - 1; i >= 0; i--) {
-                    if (closes[i] != null) { price = closes[i]; break; }
-                }
+    const tryProxy = async (proxy) => {
+        const res = await fetch(proxy, { signal: AbortSignal.timeout(7000) });
+        if (!res.ok) throw new Error('bad');
+        const data = await res.json();
+        const result = data?.chart?.result?.[0];
+        if (!result) throw new Error('no result');
+        const meta = result.meta;
+        let price = meta.regularMarketPrice;
+        const closes = result.indicators?.quote?.[0]?.close;
+        if (closes) {
+            for (let i = closes.length - 1; i >= 0; i--) {
+                if (closes[i] != null) { price = closes[i]; break; }
             }
-            if (!price) price = meta.previousClose;
-            const prevClose = meta.previousClose || meta.chartPreviousClose || price;
-            if (price && price > 0) return { success: true, price, prevClose };
-        } catch { continue; }
+        }
+        if (!price) price = meta.previousClose;
+        const prevClose = meta.previousClose || meta.chartPreviousClose || price;
+        if (!price || price <= 0) throw new Error('no price');
+        return { success: true, price, prevClose };
+    };
+
+    // Race all proxies — use whichever responds first
+    try {
+        const result = await Promise.any(proxies.map(tryProxy));
+        priceCache[symbol] = result; // cache success
+        return result;
+    } catch {
+        // All failed — return cached value if available
+        if (priceCache[symbol]) return priceCache[symbol];
+        return { success: false };
     }
-    return { success: false };
 }
 
 // ─────────────────────────────────────────────
