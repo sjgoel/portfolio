@@ -1121,16 +1121,21 @@ async function fetchPrice(symbol, isIndia) {
         return null;
     };
 
-    for (const proxy of proxies) {
-        try {
-            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-            if (!res.ok) continue;
-            const data = await res.json();
-            const r = parse(data);
-            if (r) return r;
-        } catch { continue; }
+    const tryProxy = async (proxy) => {
+        const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) throw new Error('bad status');
+        const data = await res.json();
+        const r = parse(data);
+        if (!r) throw new Error('no price');
+        return r;
+    };
+
+    // Race all proxies — first one to succeed wins
+    try {
+        return await Promise.any(proxies.map(p => tryProxy(p)));
+    } catch {
+        return { success: false };
     }
-    return { success: false };
 }
 
 // ─────────────────────────────────────────────
@@ -1270,45 +1275,51 @@ async function updateAllPortfolios() {
     const indiaOpen = indiaMarketStatus() !== 'closed';
     let anyError = false;
 
-    // ── 1. US SUMMARY — fetch prices, render summary card immediately ──
+    // ── 1. US SUMMARY — fetch all unique symbols in parallel ──
     if (usPositions.length > 0) {
         const prices = {}, prevCloses = {};
         const uniqueUS = [...new Set(usPositions.map(p => p.symbol))];
-        for (const sym of uniqueUS) {
-            if (usOpen || !lastPrices[sym]) {
-                // Only hit Yahoo if market open OR we have no cached price yet
-                const r = await fetchPrice(sym, false);
-                if (r.success) {
-                    lastPrices[sym]     = r.price;
-                    lastPrevCloses[sym] = r.prevClose;
-                } else { anyError = true; }
-            }
-            // Market closed + cache exists → reuse cache, no fetch
+        const needFetch = uniqueUS.filter(sym => usOpen || !lastPrices[sym]);
+
+        // Fetch all symbols simultaneously — no sequential waiting
+        await Promise.all(needFetch.map(async sym => {
+            const r = await fetchPrice(sym, false);
+            if (r.success) {
+                lastPrices[sym]     = r.price;
+                lastPrevCloses[sym] = r.prevClose;
+            } else { anyError = true; }
+        }));
+
+        uniqueUS.forEach(sym => {
             prices[sym]     = lastPrices[sym];
             prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
-        }
+        });
+
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false);
-        updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);  // summary first
-        document.getElementById('usTable').innerHTML = html;              // details second
+        updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);
+        document.getElementById('usTable').innerHTML = html;
     } else {
         document.getElementById('usTable').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No US positions — add some in Settings.</div>';
     }
 
-    // ── 2. INDIA SUMMARY — same pattern, deduct BINNY writeoff silently ──
+    // ── 2. INDIA SUMMARY — fetch all unique symbols in parallel ──
     if (indiaPositions.length > 0) {
         const prices = {}, prevCloses = {};
         const uniqueIndia = [...new Set(indiaPositions.map(p => p.symbol))];
-        for (const sym of uniqueIndia) {
-            if (indiaOpen || !lastPrices[sym]) {
-                const r = await fetchPrice(sym, true);
-                if (r.success) {
-                    lastPrices[sym]     = r.price;
-                    lastPrevCloses[sym] = r.prevClose;
-                } else { anyError = true; }
-            }
+        const needFetch = uniqueIndia.filter(sym => indiaOpen || !lastPrices[sym]);
+
+        await Promise.all(needFetch.map(async sym => {
+            const r = await fetchPrice(sym, true);
+            if (r.success) {
+                lastPrices[sym]     = r.price;
+                lastPrevCloses[sym] = r.prevClose;
+            } else { anyError = true; }
+        }));
+
+        uniqueIndia.forEach(sym => {
             prices[sym]     = lastPrices[sym];
             prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
-        }
+        });
         const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
         // Add BINNY writeoff to invested cost → reduces Total P&L by ₹44,865. Never shown in table.
         updateSummary('india', fINR, totalValue, totalCost + INDIA_WRITEOFFS, totalTodayPnL);
