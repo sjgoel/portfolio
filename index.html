@@ -804,6 +804,11 @@ async function pushToGist(silent = false) {
         if (!silent) showSyncMsg('No sync config saved. Fill in Gist ID + Token first.', 'err');
         return false;
     }
+    // Safety: never overwrite Gist with empty positions
+    if (usPositions.length === 0 && indiaPositions.length === 0) {
+        if (!silent) showSyncMsg('Nothing to push — positions are empty.', 'err');
+        return false;
+    }
     const payload = { usPositions, indiaPositions, updated: new Date().toISOString() };
     try {
         const res = await fetch(`https://api.github.com/gists/${c.gistId}`, {
