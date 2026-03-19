@@ -849,8 +849,9 @@ async function pullFromGist(silent = false) {
         if (!raw) throw new Error(`No readable file in gist. Files found: ${fileNames.join(', ')}`);
         const data = JSON.parse(raw);
         if (data.usPositions !== undefined || data.indiaPositions !== undefined) {
-            if (data.usPositions !== undefined)    usPositions    = data.usPositions;
-            if (data.indiaPositions !== undefined) indiaPositions = data.indiaPositions;
+            // Only overwrite if Gist actually has positions — never replace with empty array
+            if (data.usPositions !== undefined && data.usPositions.length > 0)    usPositions    = data.usPositions;
+            if (data.indiaPositions !== undefined && data.indiaPositions.length > 0) indiaPositions = data.indiaPositions;
             saveLocal();
             renderPosList();
             updateAllPortfolios();
@@ -1099,12 +1100,10 @@ async function fetchPrice(symbol, isIndia) {
     const yUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=5d&_=${Date.now()}`;
 
     const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl1)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl2)}`,
         `https://corsproxy.io/?url=${encodeURIComponent(yUrl1)}`,
         `https://corsproxy.io/?url=${encodeURIComponent(yUrl2)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl1)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl2)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl1)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl2)}`,
         `https://proxy.cors.sh/${yUrl1}`,
         `https://proxy.cors.sh/${yUrl2}`
     ];
@@ -1126,21 +1125,16 @@ async function fetchPrice(symbol, isIndia) {
         return null;
     };
 
-    const tryProxy = async (proxy) => {
-        const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-        if (!res.ok) throw new Error('bad status');
-        const data = await res.json();
-        const r = parse(data);
-        if (!r) throw new Error('no price');
-        return r;
-    };
-
-    // Race all proxies — first one to succeed wins
-    try {
-        return await Promise.any(proxies.map(p => tryProxy(p)));
-    } catch {
-        return { success: false };
+    for (const proxy of proxies) {
+        try {
+            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+            if (!res.ok) continue;
+            const data = await res.json();
+            const r = parse(data);
+            if (r) return r;
+        } catch { continue; }
     }
+    return { success: false };
 }
 
 // ─────────────────────────────────────────────
