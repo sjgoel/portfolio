@@ -762,10 +762,8 @@
 const REFRESH_SEC     = 30;
 
 const DEFAULT_US = [
-    { symbol: 'SIVR', units: 463.137017, purchasePrice: 73.41, note: 'ROBN' },
-    { symbol: 'GLDM', units: 671.844869, purchasePrice: 98.24, note: 'ROBN' },
-    { symbol: 'GLDM', units: 1180.406,   purchasePrice: 105.90, note: 'FIDL' },
-    { symbol: 'SIVR', units: 676.557,    purchasePrice: 84.13, note: 'FIDL' }
+    { symbol: 'GLDM', units: 1400.657,   purchasePrice: 105.20, note: 'FIDL' },
+    { symbol: 'SIVR', units: 986.557,    purchasePrice: 83.56,  note: 'FIDL' }
 ];
 const DEFAULT_INDIA = [];
 
@@ -1098,10 +1096,12 @@ async function fetchPrice(symbol, isIndia) {
     const proxies = [
         `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl1)}`,
         `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl2)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(yUrl1)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(yUrl2)}`,
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl1)}`,
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl2)}`,
-        `https://thingproxy.freeboard.io/fetch/${yUrl1}`,
-        `https://thingproxy.freeboard.io/fetch/${yUrl2}`
+        `https://proxy.cors.sh/${yUrl1}`,
+        `https://proxy.cors.sh/${yUrl2}`
     ];
 
     const parse = (data) => {
