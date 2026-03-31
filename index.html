@@ -1177,8 +1177,11 @@ function buildTableHTML(positions, prices, prevCloses, isIndia) {
         const pnlPct    = (pnl / cost) * 100;
         const chg       = price - pos.purchasePrice;
         const chgPct    = (chg / pos.purchasePrice) * 100;
-        const todayPnL  = (price - prevClose) * pos.units;
-        const todayPct  = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0;
+        const todayDate = new Date().toISOString().slice(0, 10);
+        const isToday   = pos.addedDate === todayDate;
+        const todayBase = isToday ? pos.purchasePrice : prevClose;
+        const todayPnL  = (price - todayBase) * pos.units;
+        const todayPct  = todayBase > 0 ? ((price - todayBase) / todayBase) * 100 : 0;
         totalCost      += cost;
         totalValue     += val;
         totalTodayPnL  += todayPnL;
@@ -1461,7 +1464,8 @@ function addUSPos() {
     const price = parseFloat(document.getElementById('usPrice').value);
     const note  = document.getElementById('usNote').value.trim().toUpperCase().slice(0,4);
     if (!sym || !units || !price) { alert('Fill in all fields.'); return; }
-    usPositions.push({ symbol: sym, units, purchasePrice: price, note });
+    const addedDate = new Date().toISOString().slice(0, 10);
+    usPositions.push({ symbol: sym, units, purchasePrice: price, note, addedDate });
     saveLocal(); renderPosList(); updateAllPortfolios();
     if (syncConfigured()) pushToGist(true);
     document.getElementById('usSymbol').value = '';
@@ -1475,7 +1479,8 @@ function addIndiaPos() {
     const units = parseFloat(document.getElementById('indiaUnits').value);
     const price = parseFloat(document.getElementById('indiaPrice').value);
     if (!sym || !units || !price) { alert('Fill in all fields.'); return; }
-    indiaPositions.push({ symbol: sym, units, purchasePrice: price });
+    const addedDate = new Date().toISOString().slice(0, 10);
+    indiaPositions.push({ symbol: sym, units, purchasePrice: price, addedDate });
     saveLocal(); renderPosList(); updateAllPortfolios();
     if (syncConfigured()) pushToGist(true);
     document.getElementById('indiaSymbol').value = '';
@@ -1489,7 +1494,8 @@ function addIndiaPos() {
     const price = parseFloat(document.getElementById('indiaPrice').value);
     const note  = document.getElementById('indiaNote').value.trim().toUpperCase().slice(0,4);
     if (!sym || !units || !price) { alert('Fill in all fields.'); return; }
-    indiaPositions.push({ symbol: sym, units, purchasePrice: price, note });
+    const addedDate = new Date().toISOString().slice(0, 10);
+    indiaPositions.push({ symbol: sym, units, purchasePrice: price, note, addedDate });
     saveLocal(); renderPosList(); updateAllPortfolios();
     if (syncConfigured()) pushToGist(true);
     document.getElementById('indiaSymbol').value = '';
