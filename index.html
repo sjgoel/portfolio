@@ -571,6 +571,13 @@
 
         .no-pos { font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 8px 0; }
 
+        @keyframes alertFlash {
+            0%,100% { background: transparent; }
+            25%,75% { background: rgba(217,119,6,0.18); }
+            50%      { background: rgba(217,119,6,0.32); }
+        }
+        tr.alert-flash td { animation: alertFlash 1.5s ease-in-out 3; }
+
         /* Desktop: hide mobile rows */
         .row-mobile { display: none; }
         .col-desktop { display: table-cell; }
@@ -773,9 +780,34 @@ let usPositions    = JSON.parse(localStorage.getItem('usPositions'))    || DEFAU
 let indiaPositions = JSON.parse(localStorage.getItem('indiaPositions')) || DEFAULT_INDIA;
 let lastPrices     = {};
 let lastPrevCloses = {};
+let lastSparklines = {};
 let countdownSecs  = REFRESH_SEC;
 let countdownTimer = null;
 let refreshTimer   = null;
+
+// ─────────────────────────────────────────────
+//  PRICE ALERTS
+// ─────────────────────────────────────────────
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+function fireAlert(pos, price, isIndia) {
+    const fmt = isIndia ? fINR : fUSD;
+    // Mark as triggered so it only fires once
+    pos.alertTriggered = true;
+    saveLocal();
+    if (syncConfigured()) pushToGist(true);
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Portfolio Alert 🎯', {
+            body: `${pos.symbol} hit your target of ${fmt(pos.targetPrice)} (current: ${fmt(price)})`,
+            icon: 'https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f4c8.png'
+        });
+    }
+}
 
 // ─────────────────────────────────────────────
 //  LOCAL STORAGE
@@ -1123,7 +1155,9 @@ async function fetchPrice(symbol, isIndia) {
         }
         if (!price) price = meta.previousClose;
         const prevClose = meta.previousClose || meta.chartPreviousClose || price;
-        if (price && price > 0) return { success: true, price, prevClose };
+        // Extract up to 5 daily closes for sparkline
+        const sparkCloses = closes ? closes.filter(v => v != null).slice(-5) : [];
+        if (price && price > 0) return { success: true, price, prevClose, sparkCloses };
         return null;
     };
 
@@ -1160,43 +1194,70 @@ const fINRshort = v => {
     return (v >= 0 ? '+' : '') + fINR(v);
 };
 
+function buildSparklineSVG(closes, isUp) {
+    if (!closes || closes.length < 2) return '';
+    const w = 60, h = 20, pad = 2;
+    const min = Math.min(...closes), max = Math.max(...closes);
+    const range = max - min || 1;
+    const pts = closes.map((v, i) => {
+        const x = pad + (i / (closes.length - 1)) * (w - pad * 2);
+        const y = h - pad - ((v - min) / range) * (h - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const color = isUp ? '#16a34a' : '#dc2626';
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:inline-block;vertical-align:middle;"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
 // ─────────────────────────────────────────────
 //  RENDER TABLE
 // ─────────────────────────────────────────────
-function buildTableHTML(positions, prices, prevCloses, isIndia) {
+function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {}) {
     const fmt = isIndia ? fINR : fUSD;
     const symCls = isIndia ? 'india' : 'us';
     let rows = '';
     let totalCost = 0, totalValue = 0, totalTodayPnL = 0;
 
-    positions.forEach(pos => {
+    positions.forEach((pos, posIdx) => {
         const price = prices[pos.symbol];
         if (price == null) return;
-        const prevClose = prevCloses[pos.symbol] || price;
-        const cost      = pos.units * pos.purchasePrice;
-        const val       = pos.units * price;
-        const pnl       = val - cost;
-        const pnlPct    = (pnl / cost) * 100;
-        const chg       = price - pos.purchasePrice;
-        const chgPct    = (chg / pos.purchasePrice) * 100;
-        const todayDate = new Date().toISOString().slice(0, 10);
-        const isToday   = pos.addedDate === todayDate;
-        const todayBase = isToday ? pos.purchasePrice : prevClose;
-        const todayPnL  = (price - todayBase) * pos.units;
-        const todayPct  = todayBase > 0 ? ((price - todayBase) / todayBase) * 100 : 0;
-        totalCost      += cost;
-        totalValue     += val;
-        totalTodayPnL  += todayPnL;
+        const prevClose    = prevCloses[pos.symbol] || price;
+        const invested     = pos.investedAmount > 0 ? pos.investedAmount : pos.units * pos.purchasePrice;
+        const cost         = invested;
+        const val          = pos.units * price;
+        const pnl          = val - cost;
+        const pnlPct       = (pnl / cost) * 100;
+        const todayDate    = new Date().toISOString().slice(0, 10);
+        const isToday      = pos.addedDate === todayDate;
+        const todayBase    = isToday ? pos.purchasePrice : prevClose;
+        const todayPnL     = (price - todayBase) * pos.units;
+        const todayPct     = todayBase > 0 ? ((price - todayBase) / todayBase) * 100 : 0;
+        totalCost         += cost;
+        totalValue        += val;
+        totalTodayPnL     += todayPnL;
+
+        // Price alert
+        const hasTarget    = pos.targetPrice > 0;
+        const alertTriggered = pos.alertTriggered || false;
+        const targetHit    = hasTarget && !alertTriggered && price >= pos.targetPrice;
+        if (targetHit) fireAlert(pos, price, isIndia);
+        const alertIcon    = !hasTarget ? '' : alertTriggered
+            ? `<span title="Target hit: ${fmt(pos.targetPrice)}" style="margin-left:4px;font-size:10px;">✅</span>`
+            : `<span title="Target: ${fmt(pos.targetPrice)}" style="margin-left:4px;font-size:10px;">🎯</span>`;
+        const rowFlash     = targetHit ? 'alert-flash' : '';
+
+        // Sparkline
+        const spark        = sparklines[pos.symbol] || [];
+        const sparkUp      = spark.length >= 2 ? spark[spark.length-1] >= spark[0] : true;
+        const sparkSVG     = buildSparklineSVG(spark, sparkUp);
 
         const plCls    = pnl >= 0 ? 'chg-pos' : 'chg-neg';
-        const chgCls   = chg >= 0 ? 'chg-pos' : 'chg-neg';
         const todayCls = todayPnL >= 0 ? 'chg-pos' : 'chg-neg';
         const unitsStr = isIndia ? pos.units.toLocaleString('en-IN') : pos.units.toFixed(6);
 
         const tvSym = isIndia ? `NSE:${pos.symbol}` : pos.symbol;
         const tvUrl = `https://www.tradingview.com/chart/?symbol=${tvSym}`;
-        rows += `<tr class="row-main">
-            <td style="text-align:left"><a href="${tvUrl}" target="_blank" style="text-decoration:none"><span class="sym ${symCls}">${pos.symbol}</span></a>${pos.note ? `<span class="note-tag">${pos.note}</span>` : ''}</td>
+        rows += `<tr class="row-main ${rowFlash}">
+            <td style="text-align:left"><a href="${tvUrl}" target="_blank" style="text-decoration:none"><span class="sym ${symCls}">${pos.symbol}</span></a>${pos.note ? `<span class="note-tag">${pos.note}</span>` : ''}${alertIcon}</td>
             <td style="text-align:left" class="price-cell">${fmt(price)}</td>
             <td style="text-align:center" class="units-cell col-desktop">${unitsStr}</td>
             <td style="text-align:center" class="avg-cell col-desktop">${fmt(pos.purchasePrice)}</td>
@@ -1212,6 +1273,7 @@ function buildTableHTML(positions, prices, prevCloses, isIndia) {
                 <div class="today-main ${todayCls}">${(todayPnL>=0?'+':'') + fmt(todayPnL)}</div>
                 <div class="today-pct ${todayCls}">${fPct(todayPct)}</div>
             </td>
+            <td style="text-align:center" class="col-desktop">${sparkSVG}</td>
         </tr>
         <tr class="row-mobile">
             <td colspan="4" style="padding-top:0;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">
@@ -1249,6 +1311,7 @@ function buildTableHTML(positions, prices, prevCloses, isIndia) {
         <th style="text-align:center">Value</th>
         <th style="text-align:center" class="col-desktop">Total P/L</th>
         <th style="text-align:center">Today P/L</th>
+        <th style="text-align:center" class="col-desktop">5D</th>
     </tr></thead>`;
 
     return { html: `<table>${header}<tbody>${rows}</tbody></table>`, totalCost, totalValue, totalTodayPnL };
@@ -1289,8 +1352,9 @@ async function updateAllPortfolios() {
         await Promise.all(needFetch.map(async sym => {
             const r = await fetchPrice(sym, false);
             if (r.success) {
-                lastPrices[sym]     = r.price;
-                lastPrevCloses[sym] = r.prevClose;
+                lastPrices[sym]      = r.price;
+                lastPrevCloses[sym]  = r.prevClose;
+                lastSparklines[sym]  = r.sparkCloses || [];
             } else { anyError = true; }
         }));
 
@@ -1299,9 +1363,11 @@ async function updateAllPortfolios() {
             prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
         });
 
-        const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false);
-        updateSummary('us', fUSD, totalValue, totalCost, totalTodayPnL);
-        document.getElementById('usTable').innerHTML = html;
+        const sparklines1 = {};
+        uniqueUS.forEach(sym => { sparklines1[sym] = lastSparklines[sym] || []; });
+        const { html: usHtml, totalCost: usCost, totalValue: usVal, totalTodayPnL: usTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false, sparklines1);
+        updateSummary('us', fUSD, usVal, usCost, usTodayPnL);
+        document.getElementById('usTable').innerHTML = usHtml;
     } else {
         document.getElementById('usTable').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No US positions — add some in Settings.</div>';
     }
@@ -1315,8 +1381,9 @@ async function updateAllPortfolios() {
         await Promise.all(needFetch.map(async sym => {
             const r = await fetchPrice(sym, true);
             if (r.success) {
-                lastPrices[sym]     = r.price;
-                lastPrevCloses[sym] = r.prevClose;
+                lastPrices[sym]      = r.price;
+                lastPrevCloses[sym]  = r.prevClose;
+                lastSparklines[sym]  = r.sparkCloses || [];
             } else { anyError = true; }
         }));
 
@@ -1324,10 +1391,12 @@ async function updateAllPortfolios() {
             prices[sym]     = lastPrices[sym];
             prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
         });
-        const { html, totalCost, totalValue, totalTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true);
+        const sparklines2 = {};
+        uniqueIndia.forEach(sym => { sparklines2[sym] = lastSparklines[sym] || []; });
+        const { html: indiaHtml, totalCost: indiaCost, totalValue: indiaVal, totalTodayPnL: indiaTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true, sparklines2);
         // Add BINNY writeoff to invested cost → reduces Total P&L by ₹44,865. Never shown in table.
-        updateSummary('india', fINR, totalValue, totalCost + INDIA_WRITEOFFS, totalTodayPnL);
-        document.getElementById('indiaTableWrap').innerHTML = html;
+        updateSummary('india', fINR, indiaVal, indiaCost + INDIA_WRITEOFFS, indiaTodayPnL);
+        document.getElementById('indiaTableWrap').innerHTML = indiaHtml;
     } else {
         // No positions configured yet — still show the writeoff
         updateSummary('india', fINR, 0, INDIA_WRITEOFFS, 0);
@@ -1430,7 +1499,9 @@ function renderPosList() {
                 <div class="edit-panel-row">
                     <div class="fg"><label>Units</label><input type="number" id="edit-units-us-${i}" value="${p.units}" step="0.000001"></div>
                     <div class="fg"><label>Avg Price ($)</label><input type="number" id="edit-price-us-${i}" value="${p.purchasePrice}" step="0.01"></div>
+                    <div class="fg"><label>Invested ($) <span style="font-weight:400;opacity:0.6">(optional)</span></label><input type="number" id="edit-invested-us-${i}" value="${p.investedAmount||''}" step="0.01" placeholder="leave blank = units×avg"></div>
                     <div class="fg"><label>Purchase Date</label><input type="date" id="edit-date-us-${i}" value="${p.addedDate||''}"></div>
+                    <div class="fg"><label>Target Price ($) <span style="font-weight:400;opacity:0.6">alert</span></label><input type="number" id="edit-target-us-${i}" value="${p.targetPrice||''}" step="0.01" placeholder="e.g. 185.00"></div>
                     <div class="fg"><label>Note</label><input type="text" id="edit-note-us-${i}" value="${p.note||''}" maxlength="4" style="text-transform:uppercase"></div>
                     <button class="save-btn" onclick="saveEdit('us',${i})">✓ Save</button>
                 </div>
@@ -1454,7 +1525,9 @@ function renderPosList() {
                 <div class="edit-panel-row">
                     <div class="fg"><label>Units</label><input type="number" id="edit-units-india-${i}" value="${p.units}" step="1"></div>
                     <div class="fg"><label>Avg Price (₹)</label><input type="number" id="edit-price-india-${i}" value="${p.purchasePrice}" step="0.01"></div>
+                    <div class="fg"><label>Invested (₹) <span style="font-weight:400;opacity:0.6">(optional)</span></label><input type="number" id="edit-invested-india-${i}" value="${p.investedAmount||''}" step="0.01" placeholder="leave blank = units×avg"></div>
                     <div class="fg"><label>Purchase Date</label><input type="date" id="edit-date-india-${i}" value="${p.addedDate||''}"></div>
+                    <div class="fg"><label>Target Price (₹) <span style="font-weight:400;opacity:0.6">alert</span></label><input type="number" id="edit-target-india-${i}" value="${p.targetPrice||''}" step="0.01" placeholder="e.g. 130.00"></div>
                     <div class="fg"><label>Note</label><input type="text" id="edit-note-india-${i}" value="${p.note||''}" maxlength="4" style="text-transform:uppercase"></div>
                     <button class="save-btn" onclick="saveEdit('india',${i})">✓ Save</button>
                 </div>
@@ -1525,12 +1598,18 @@ function toggleEdit(region, idx) {
 function saveEdit(region, idx) {
     const positions = region === 'us' ? usPositions : indiaPositions;
     const pos = positions[idx];
-    const newUnits = parseFloat(document.getElementById(`edit-units-${region}-${idx}`).value);
-    const newPrice = parseFloat(document.getElementById(`edit-price-${region}-${idx}`).value);
-    const newNote  = document.getElementById(`edit-note-${region}-${idx}`).value.trim().toUpperCase().slice(0,4);
-    const newDate  = document.getElementById(`edit-date-${region}-${idx}`).value.trim() || pos.addedDate || '';
+    const newUnits    = parseFloat(document.getElementById(`edit-units-${region}-${idx}`).value);
+    const newPrice    = parseFloat(document.getElementById(`edit-price-${region}-${idx}`).value);
+    const newNote     = document.getElementById(`edit-note-${region}-${idx}`).value.trim().toUpperCase().slice(0,4);
+    const newDate     = document.getElementById(`edit-date-${region}-${idx}`).value.trim() || pos.addedDate || '';
+    const investedRaw = document.getElementById(`edit-invested-${region}-${idx}`).value.trim();
+    const newInvested = investedRaw ? parseFloat(investedRaw) : 0;
+    const targetRaw   = document.getElementById(`edit-target-${region}-${idx}`).value.trim();
+    const newTarget   = targetRaw ? parseFloat(targetRaw) : 0;
+    // If target changed, reset triggered flag
+    const alertTriggered = (newTarget === pos.targetPrice) ? (pos.alertTriggered || false) : false;
     if (!newUnits || !newPrice) { alert('Fill in all fields.'); return; }
-    positions[idx] = { ...pos, units: newUnits, purchasePrice: newPrice, note: newNote, addedDate: newDate };
+    positions[idx] = { ...pos, units: newUnits, purchasePrice: newPrice, note: newNote, addedDate: newDate, investedAmount: newInvested, targetPrice: newTarget, alertTriggered };
     saveLocal(); renderPosList(); updateAllPortfolios();
     if (syncConfigured()) pushToGist(true);
 }
@@ -1544,6 +1623,7 @@ document.getElementById('settingsModal').addEventListener('click', function(e) {
 //  INIT
 // Always pull latest data from gist on startup, then start refreshing
 document.addEventListener('DOMContentLoaded', () => {
+    requestNotificationPermission();
     updateSyncBanner();
     pullFromGist(true).then(() => {
         updateAllPortfolios().then(startCountdown);
