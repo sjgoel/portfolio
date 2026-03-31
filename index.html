@@ -1189,10 +1189,16 @@ async function fetchSparkline(symbol, isIndia) {
             const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
             if (!res.ok) continue;
             const data = await res.json();
-            const closes = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+            const result = data?.chart?.result?.[0];
+            if (!result) continue;
+            const closes = result.indicators?.quote?.[0]?.close;
+            const livePrice = result.meta?.regularMarketPrice;
             if (closes) {
                 const valid = closes.filter(v => v != null);
-                if (valid.length >= 2) return valid.slice(-5);
+                // Take last 5 historical closes, then append today's live price
+                const last5 = valid.slice(-5);
+                if (livePrice && livePrice > 0) last5.push(livePrice);
+                if (last5.length >= 2) return last5;
             }
         } catch { continue; }
     }
