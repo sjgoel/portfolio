@@ -781,7 +781,6 @@ let usPositions    = JSON.parse(localStorage.getItem('usPositions'))    || DEFAU
 let indiaPositions = JSON.parse(localStorage.getItem('indiaPositions')) || DEFAULT_INDIA;
 let lastPrices     = {};
 let lastPrevCloses = {};
-let lastSparklines = {};
 let countdownSecs  = REFRESH_SEC;
 let countdownTimer = null;
 let refreshTimer   = null;
@@ -1175,6 +1174,32 @@ async function fetchPrice(symbol, isIndia) {
 }
 
 // ─────────────────────────────────────────────
+//  SPARKLINE FETCH (5 daily closes)
+// ─────────────────────────────────────────────
+async function fetchSparkline(symbol, isIndia) {
+    const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
+    const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=1mo&_=${Date.now()}`;
+    const proxies = [
+        `https://corsproxy.io/?url=${encodeURIComponent(yUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
+        `https://proxy.cors.sh/${yUrl}`
+    ];
+    for (const proxy of proxies) {
+        try {
+            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+            if (!res.ok) continue;
+            const data = await res.json();
+            const closes = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+            if (closes) {
+                const valid = closes.filter(v => v != null);
+                if (valid.length >= 2) return valid.slice(-5);
+            }
+        } catch { continue; }
+    }
+    return [];
+}
+
+// ─────────────────────────────────────────────
 //  FORMAT HELPERS
 // ─────────────────────────────────────────────
 const fUSD = v => {
@@ -1355,7 +1380,6 @@ async function updateAllPortfolios() {
             if (r.success) {
                 lastPrices[sym]      = r.price;
                 lastPrevCloses[sym]  = r.prevClose;
-                lastSparklines[sym]  = r.sparkCloses || [];
             } else { anyError = true; }
         }));
 
@@ -1365,7 +1389,9 @@ async function updateAllPortfolios() {
         });
 
         const sparklines1 = {};
-        uniqueUS.forEach(sym => { sparklines1[sym] = lastSparklines[sym] || []; });
+        await Promise.all(uniqueUS.map(async sym => {
+            sparklines1[sym] = await fetchSparkline(sym, false);
+        }));
         const { html: usHtml, totalCost: usCost, totalValue: usVal, totalTodayPnL: usTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false, sparklines1);
         updateSummary('us', fUSD, usVal, usCost, usTodayPnL);
         document.getElementById('usTable').innerHTML = usHtml;
@@ -1384,7 +1410,6 @@ async function updateAllPortfolios() {
             if (r.success) {
                 lastPrices[sym]      = r.price;
                 lastPrevCloses[sym]  = r.prevClose;
-                lastSparklines[sym]  = r.sparkCloses || [];
             } else { anyError = true; }
         }));
 
@@ -1393,7 +1418,9 @@ async function updateAllPortfolios() {
             prevCloses[sym] = lastPrevCloses[sym] || lastPrices[sym];
         });
         const sparklines2 = {};
-        uniqueIndia.forEach(sym => { sparklines2[sym] = lastSparklines[sym] || []; });
+        await Promise.all(uniqueIndia.map(async sym => {
+            sparklines2[sym] = await fetchSparkline(sym, true);
+        }));
         const { html: indiaHtml, totalCost: indiaCost, totalValue: indiaVal, totalTodayPnL: indiaTodayPnL } = buildTableHTML(indiaPositions, prices, prevCloses, true, sparklines2);
         // Add BINNY writeoff to invested cost → reduces Total P&L by ₹44,865. Never shown in table.
         updateSummary('india', fINR, indiaVal, indiaCost + INDIA_WRITEOFFS, indiaTodayPnL);
