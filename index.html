@@ -1240,7 +1240,7 @@ function buildSparklineSVG(closes, isUp) {
     // Vertical day separator lines (one per data point except first and last)
     const separators = closes.slice(1, -1).map((_, i) => {
         const x = (pad + ((i + 1) / (closes.length - 1)) * (w - pad * 2)).toFixed(1);
-        return `<line x1="${x}" y1="${pad}" x2="${x}" y2="${h - pad}" stroke="#d1d5db" stroke-width="0.5"/>`;
+        return `<line x1="${x}" y1="${pad}" x2="${x}" y2="${h - pad}" stroke="#9ca3af" stroke-width="0.8"/>`;
     }).join('');
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:inline-block;vertical-align:middle;">${separators}<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
 }
