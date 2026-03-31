@@ -324,12 +324,13 @@
         /* Fixed column widths - same for both US and India tables */
         table th:nth-child(1), table td:nth-child(1) { width: 13%; text-align: left; } /* Symbol */
         table th:nth-child(2), table td:nth-child(2) { width: 10%; text-align: left; } /* LTP */
-        table th:nth-child(3), table td:nth-child(3) { width: 12%; text-align: center; } /* Units */
-        table th:nth-child(4), table td:nth-child(4) { width: 10%; text-align: center; } /* Avg */
-        table th:nth-child(5), table td:nth-child(5) { width: 17%; text-align: center; } /* Invested */
-        table th:nth-child(6), table td:nth-child(6) { width: 15%; text-align: center; } /* Value */
-        table th:nth-child(7), table td:nth-child(7) { width: 14%; text-align: center; } /* Total P/L */
-        table th:nth-child(8), table td:nth-child(8) { width: 14%; text-align: center; } /* Today P/L */
+        table th:nth-child(3), table td:nth-child(3) { width: 10%; text-align: center; } /* Units */
+        table th:nth-child(4), table td:nth-child(4) { width: 9%; text-align: center; } /* Avg */
+        table th:nth-child(5), table td:nth-child(5) { width: 13%; text-align: center; } /* Invested */
+        table th:nth-child(6), table td:nth-child(6) { width: 13%; text-align: center; } /* Value */
+        table th:nth-child(7), table td:nth-child(7) { width: 12%; text-align: center; } /* Total P/L */
+        table th:nth-child(8), table td:nth-child(8) { width: 12%; text-align: center; } /* Today P/L */
+        table th:nth-child(9), table td:nth-child(9) { width: 8%; text-align: center; }  /* 5D */
 
         thead tr { border-bottom: 1px solid var(--border); }
         .region-header.us    + .table-wrap thead tr { background: #dbeafe; border-top: 2px solid #111827; border-bottom: 2px solid #111827; }
@@ -523,8 +524,8 @@
         .edit-panel.open { display: block; }
         .edit-panel-row {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
-            gap: 6px;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 8px;
             align-items: end;
         }
         .save-btn {
