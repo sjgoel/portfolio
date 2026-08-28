@@ -1,1 +1,168 @@
+name: Update portfolio prices
 
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portfolio-price-update
+  cancel-in-progress: true
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Yahoo prices for portfolio symbols
+        env:
+          GIST_ID: d5b128bf7d79126034c9c3816a35cd37
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.parse
+          import urllib.request
+          from datetime import datetime, timezone
+
+          UA = "Mozilla/5.0 (compatible; PortfolioPriceUpdater/1.0)"
+          GIST_ID = os.environ["GIST_ID"]
+
+          def get_json(url, timeout=20):
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      "User-Agent": UA,
+                      "Accept": "application/json,text/plain,*/*"
+                  }
+              )
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return json.load(r)
+
+          # Read current positions from the same Gist used by the portfolio page.
+          gist = get_json(f"https://api.github.com/gists/{GIST_ID}")
+          files = gist.get("files", {})
+          raw = (
+              (files.get("gistfile1.txt") or {}).get("content")
+              or (files.get("portfolio.json") or {}).get("content")
+          )
+          if not raw:
+              raise RuntimeError("Portfolio data not found in Gist")
+
+          portfolio = json.loads(raw)
+          us = portfolio.get("usPositions") or []
+          india = portfolio.get("indiaPositions") or []
+
+          requested = []
+          for p in us:
+              s = str(p.get("symbol", "")).strip()
+              if s:
+                  requested.append((s, s))
+          for p in india:
+              s = str(p.get("symbol", "")).strip()
+              if s:
+                  yahoo = s if "." in s else s + ".NS"
+                  requested.append((s, yahoo))
+
+          # Preserve order while removing duplicates.
+          seen = set()
+          symbols = []
+          for display, yahoo in requested:
+              if display not in seen:
+                  seen.add(display)
+                  symbols.append((display, yahoo))
+
+          quotes = {}
+          errors = {}
+
+          for display, yahoo in symbols:
+              try:
+                  enc = urllib.parse.quote(yahoo, safe=".^=-")
+                  intraday = get_json(
+                      f"https://query1.finance.yahoo.com/v8/finance/chart/{enc}?interval=1m&range=1d"
+                  )
+                  result = (intraday.get("chart", {}).get("result") or [None])[0]
+                  if not result:
+                      raise RuntimeError("No intraday result")
+
+                  meta = result.get("meta") or {}
+                  closes = (((result.get("indicators") or {}).get("quote") or [{}])[0].get("close") or [])
+                  valid_intraday = [float(x) for x in closes if x is not None]
+                  price = meta.get("regularMarketPrice")
+                  if valid_intraday:
+                      price = valid_intraday[-1]
+                  if price is None:
+                      price = meta.get("previousClose") or meta.get("chartPreviousClose")
+                  prev = meta.get("previousClose") or meta.get("chartPreviousClose") or price
+
+                  daily = get_json(
+                      f"https://query1.finance.yahoo.com/v8/finance/chart/{enc}?interval=1d&range=1mo"
+                  )
+                  dresult = (daily.get("chart", {}).get("result") or [None])[0]
+                  dcloses = []
+                  if dresult:
+                      arr = (((dresult.get("indicators") or {}).get("quote") or [{}])[0].get("close") or [])
+                      dcloses = [float(x) for x in arr if x is not None][-5:]
+
+                  if price is None:
+                      raise RuntimeError("No price")
+
+                  spark = dcloses[:]
+                  p = float(price)
+                  if not spark or abs(spark[-1] - p) > 1e-12:
+                      spark.append(p)
+
+                  quotes[display] = {
+                      "price": p,
+                      "prevClose": float(prev) if prev is not None else p,
+                      "sparkline": spark[-6:],
+                      "yahooSymbol": yahoo
+                  }
+              except Exception as e:
+                  errors[display] = str(e)
+
+              time.sleep(0.25)
+
+          # If Yahoo has a temporary failure, keep the last known good quote.
+          try:
+              with open("prices.json", "r", encoding="utf-8") as f:
+                  old = json.load(f)
+              for s, q in (old.get("quotes") or {}).items():
+                  quotes.setdefault(s, q)
+          except Exception:
+              pass
+
+          payload = {
+              "updated": datetime.now(timezone.utc).isoformat(),
+              "quotes": quotes
+          }
+          if errors:
+              payload["errors"] = errors
+
+          with open("prices.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f, indent=2, sort_keys=True)
+              f.write("\n")
+
+          print(f"Wrote prices.json with {len(quotes)} quote(s)")
+          if errors:
+              print("Temporary fetch errors:", errors)
+          PY
+
+      - name: Commit updated prices
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add prices.json
+          if git diff --cached --quiet; then
+            echo "No price changes"
+            exit 0
+          fi
+          git commit -m "Update portfolio prices"
+          git push
