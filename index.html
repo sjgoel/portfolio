@@ -1663,12 +1663,25 @@ document.getElementById('settingsModal').addEventListener('click', function(e) {
 // ─────────────────────────────────────────────
 //  INIT
 // Always pull latest data from gist on startup, then start refreshing
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     requestNotificationPermission();
     updateSyncBanner();
-    pullFromGist(true).then(() => {
-        updateAllPortfolios().then(startCountdown);
-    });
+
+    // On some mobile browsers the first GitHub API request can fail during startup.
+    // Retry once before rendering the portfolio so we don't show an empty $0/₹0 screen.
+    let pulled = await pullFromGist(true);
+
+    if (!pulled && getSyncConfig().gistId) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        pulled = await pullFromGist(true);
+    }
+
+    if (!pulled && syncConfigured()) {
+        showSyncMsg('Cloud pull did not complete on startup. Tap Pull Now to retry.', 'err');
+    }
+
+    await updateAllPortfolios();
+    startCountdown();
 });
 </script>
 
