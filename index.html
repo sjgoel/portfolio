@@ -779,8 +779,13 @@ const DEFAULT_INDIA = [];
 
 let usPositions    = JSON.parse(localStorage.getItem('usPositions'))    || DEFAULT_US;
 let indiaPositions = JSON.parse(localStorage.getItem('indiaPositions')) || DEFAULT_INDIA;
-let lastPrices     = {};
-let lastPrevCloses = {};
+let lastPrices     = JSON.parse(localStorage.getItem('lastPrices') || '{}');
+let lastPrevCloses = JSON.parse(localStorage.getItem('lastPrevCloses') || '{}');
+
+function savePriceCache() {
+    localStorage.setItem('lastPrices', JSON.stringify(lastPrices));
+    localStorage.setItem('lastPrevCloses', JSON.stringify(lastPrevCloses));
+}
 let countdownSecs  = REFRESH_SEC;
 let countdownTimer = null;
 let refreshTimer   = null;
@@ -1160,8 +1165,15 @@ async function firstValidYahooResponse(yahooUrls, parser) {
 
 async function fetchPrice(symbol, isIndia) {
     const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
-    const yUrl1 = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
-    const yUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=5d&_=${Date.now()}`;
+    const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
+
+    const urls = [
+        yUrl,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl)}`,
+        `https://cors.isomorphic-git.org/${yUrl}`,
+        `https://proxy.cors.sh/${yUrl}`
+    ];
 
     const parse = (data) => {
         const result = data?.chart?.result?.[0];
@@ -1174,15 +1186,30 @@ async function fetchPrice(symbol, isIndia) {
                 if (closes[i] != null) { price = closes[i]; break; }
             }
         }
-        if (!price) price = meta.previousClose;
+        if (!price) price = meta.previousClose || meta.chartPreviousClose;
         const prevClose = meta.previousClose || meta.chartPreviousClose || price;
-        const sparkCloses = closes ? closes.filter(v => v != null).slice(-5) : [];
-        if (price && price > 0) return { success: true, price, prevClose, sparkCloses };
+        if (price && price > 0) return { success: true, price, prevClose };
         return null;
     };
 
-    const result = await firstValidYahooResponse([yUrl1, yUrl2], parse);
-    return result || { success: false };
+    const tryOne = async (url) => {
+        const res = await fetch(url, {
+            signal: AbortSignal.timeout(4500),
+            cache: 'no-store'
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const parsed = parse(data);
+        if (!parsed) throw new Error('No price data');
+        return parsed;
+    };
+
+    try {
+        // Race all routes. One bad/slow proxy no longer blocks the page.
+        return await Promise.any(urls.map(tryOne));
+    } catch {
+        return { success: false };
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -1191,20 +1218,38 @@ async function fetchPrice(symbol, isIndia) {
 async function fetchSparkline(symbol, isIndia) {
     const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
     const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=1mo&_=${Date.now()}`;
+    const urls = [
+        yUrl,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl)}`,
+        `https://cors.isomorphic-git.org/${yUrl}`,
+        `https://proxy.cors.sh/${yUrl}`
+    ];
 
-    const parse = (data) => {
+    const tryOne = async (url) => {
+        const res = await fetch(url, {
+            signal: AbortSignal.timeout(4500),
+            cache: 'no-store'
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
         const result = data?.chart?.result?.[0];
-        if (!result) return null;
+        if (!result) throw new Error('No chart data');
         const closes = result.indicators?.quote?.[0]?.close;
         const livePrice = result.meta?.regularMarketPrice;
-        if (!closes) return null;
+        if (!closes) throw new Error('No closes');
         const valid = closes.filter(v => v != null);
         const last5 = valid.slice(-5);
         if (livePrice && livePrice > 0) last5.push(livePrice);
-        return last5.length >= 2 ? last5 : null;
+        if (last5.length < 2) throw new Error('Not enough points');
+        return last5;
     };
 
-    return (await firstValidYahooResponse([yUrl], parse)) || [];
+    try {
+        return await Promise.any(urls.map(tryOne));
+    } catch {
+        return [];
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -1258,27 +1303,28 @@ function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {})
 
     positions.forEach((pos, posIdx) => {
         const price = prices[pos.symbol];
-        if (price == null) return;
-        const prevClose    = prevCloses[pos.symbol] || price;
+        const priceAvailable = price != null && Number.isFinite(price);
+        const effectivePrice = priceAvailable ? price : null;
+        const prevClose    = priceAvailable ? (prevCloses[pos.symbol] || price) : null;
         const invested     = pos.investedAmount > 0 ? pos.investedAmount : pos.units * pos.purchasePrice;
         const cost         = invested;
-        const val          = pos.units * price;
-        const pnl          = val - cost;
-        const pnlPct       = (pnl / cost) * 100;
+        const val          = priceAvailable ? pos.units * effectivePrice : 0;
+        const pnl          = priceAvailable ? val - cost : 0;
+        const pnlPct       = priceAvailable && cost > 0 ? (pnl / cost) * 100 : 0;
         const todayDate    = new Date().toISOString().slice(0, 10);
         const isToday      = pos.addedDate === todayDate;
-        const todayBase    = isToday ? pos.purchasePrice : prevClose;
-        const todayPnL     = (price - todayBase) * pos.units;
-        const todayPct     = todayBase > 0 ? ((price - todayBase) / todayBase) * 100 : 0;
-        totalCost         += cost;
-        totalValue        += val;
-        totalTodayPnL     += todayPnL;
+        const todayBase    = priceAvailable ? (isToday ? pos.purchasePrice : prevClose) : null;
+        const todayPnL     = priceAvailable && todayBase ? (effectivePrice - todayBase) * pos.units : 0;
+        const todayPct     = priceAvailable && todayBase > 0 ? ((effectivePrice - todayBase) / todayBase) * 100 : 0;
+        if (priceAvailable) totalCost += cost;
+        if (priceAvailable) totalValue += val;
+        if (priceAvailable) totalTodayPnL += todayPnL;
 
         // Price alert
         const hasTarget    = pos.targetPrice > 0;
         const alertTriggered = pos.alertTriggered || false;
-        const targetHit    = hasTarget && !alertTriggered && price >= pos.targetPrice;
-        if (targetHit) fireAlert(pos, price, isIndia);
+        const targetHit    = priceAvailable && hasTarget && !alertTriggered && effectivePrice >= pos.targetPrice;
+        if (targetHit) fireAlert(pos, effectivePrice, isIndia);
         const alertIcon    = !hasTarget ? '' : alertTriggered
             ? `<span title="Target hit: ${fmt(pos.targetPrice)}" style="margin-left:4px;font-size:10px;">✅</span>`
             : `<span title="Target: ${fmt(pos.targetPrice)}" style="margin-left:4px;font-size:10px;">🎯</span>`;
@@ -1297,20 +1343,20 @@ function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {})
         const tvUrl = `https://www.tradingview.com/chart/?symbol=${tvSym}`;
         rows += `<tr class="row-main ${rowFlash}">
             <td style="text-align:left"><a href="${tvUrl}" target="_blank" style="text-decoration:none"><span class="sym ${symCls}">${pos.symbol}</span></a>${pos.note ? `<span class="note-tag">${pos.note}</span>` : ''}${alertIcon}</td>
-            <td style="text-align:left" class="price-cell">${fmt(price)}</td>
+            <td style="text-align:left" class="price-cell">${priceAvailable ? fmt(effectivePrice) : 'N/A'}</td>
             <td style="text-align:center" class="units-cell col-desktop">${unitsStr}</td>
             <td style="text-align:center" class="avg-cell col-desktop">${fmt(pos.purchasePrice)}</td>
             <td style="text-align:center" class="cost-cell col-desktop">${fmt(cost)}</td>
-            <td style="text-align:center" class="value-cell">${fmt(val)}</td>
+            <td style="text-align:center" class="value-cell">${priceAvailable ? fmt(val) : '—'}</td>
             <td style="text-align:center" class="col-desktop">
-                <div class="pl-wrapper ${plCls}">
+                ${priceAvailable ? `<div class="pl-wrapper ${plCls}">
                     <div class="pl-main ${plCls}">${(pnl>=0?'+':'') + fmt(pnl)}</div>
                     <div class="pl-pct ${plCls}">${fPct(pnlPct)}</div>
-                </div>
+                </div>` : '—'}
             </td>
             <td style="text-align:center">
-                <div class="today-main ${todayCls}">${(todayPnL>=0?'+':'') + fmt(todayPnL)}</div>
-                <div class="today-pct ${todayCls}">${fPct(todayPct)}</div>
+                ${priceAvailable ? `<div class="today-main ${todayCls}">${(todayPnL>=0?'+':'') + fmt(todayPnL)}</div>
+                <div class="today-pct ${todayCls}">${fPct(todayPct)}</div>` : '—'}
             </td>
             <td style="text-align:center" class="col-desktop">${sparkSVG}</td>
         </tr>
@@ -1393,6 +1439,7 @@ async function updateAllPortfolios() {
             if (r.success) {
                 lastPrices[sym]      = r.price;
                 lastPrevCloses[sym]  = r.prevClose;
+                savePriceCache();
             } else { anyError = true; }
         }));
 
@@ -1423,6 +1470,7 @@ async function updateAllPortfolios() {
             if (r.success) {
                 lastPrices[sym]      = r.price;
                 lastPrevCloses[sym]  = r.prevClose;
+                savePriceCache();
             } else { anyError = true; }
         }));
 
