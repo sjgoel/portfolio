@@ -1128,24 +1128,45 @@ function setBadge(id, status, market) {
 // ─────────────────────────────────────────────
 //  PRICE FETCHING
 // ─────────────────────────────────────────────
+const MARKET_FETCH_TIMEOUT_MS = 3500;
+
+function yahooProxyUrls(yUrl) {
+    // corsproxy.io started returning 401s in Aug 2026, so do not use it.
+    // Try the two remaining working fallbacks in parallel; first valid response wins.
+    return [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
+        `https://proxy.cors.sh/${yUrl}`
+    ];
+}
+
+async function firstValidYahooResponse(yahooUrls, parser) {
+    const attempts = yahooUrls.flatMap(yUrl =>
+        yahooProxyUrls(yUrl).map(async proxyUrl => {
+            const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(MARKET_FETCH_TIMEOUT_MS) });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const parsed = parser(data);
+            if (parsed == null) throw new Error('Invalid Yahoo response');
+            return parsed;
+        })
+    );
+
+    try {
+        return await Promise.any(attempts);
+    } catch {
+        return null;
+    }
+}
+
 async function fetchPrice(symbol, isIndia) {
     const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
     const yUrl1 = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
     const yUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=5d&_=${Date.now()}`;
 
-    const proxies = [
-        `https://corsproxy.io/?url=${encodeURIComponent(yUrl1)}`,
-        `https://corsproxy.io/?url=${encodeURIComponent(yUrl2)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl1)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl2)}`,
-        `https://proxy.cors.sh/${yUrl1}`,
-        `https://proxy.cors.sh/${yUrl2}`
-    ];
-
     const parse = (data) => {
         const result = data?.chart?.result?.[0];
         if (!result) return null;
-        const meta = result.meta;
+        const meta = result.meta || {};
         let price = meta.regularMarketPrice;
         const closes = result.indicators?.quote?.[0]?.close;
         if (closes) {
@@ -1155,22 +1176,13 @@ async function fetchPrice(symbol, isIndia) {
         }
         if (!price) price = meta.previousClose;
         const prevClose = meta.previousClose || meta.chartPreviousClose || price;
-        // Extract up to 5 daily closes for sparkline
         const sparkCloses = closes ? closes.filter(v => v != null).slice(-5) : [];
         if (price && price > 0) return { success: true, price, prevClose, sparkCloses };
         return null;
     };
 
-    for (const proxy of proxies) {
-        try {
-            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-            if (!res.ok) continue;
-            const data = await res.json();
-            const r = parse(data);
-            if (r) return r;
-        } catch { continue; }
-    }
-    return { success: false };
+    const result = await firstValidYahooResponse([yUrl1, yUrl2], parse);
+    return result || { success: false };
 }
 
 // ─────────────────────────────────────────────
@@ -1179,30 +1191,20 @@ async function fetchPrice(symbol, isIndia) {
 async function fetchSparkline(symbol, isIndia) {
     const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
     const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=1mo&_=${Date.now()}`;
-    const proxies = [
-        `https://corsproxy.io/?url=${encodeURIComponent(yUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
-        `https://proxy.cors.sh/${yUrl}`
-    ];
-    for (const proxy of proxies) {
-        try {
-            const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-            if (!res.ok) continue;
-            const data = await res.json();
-            const result = data?.chart?.result?.[0];
-            if (!result) continue;
-            const closes = result.indicators?.quote?.[0]?.close;
-            const livePrice = result.meta?.regularMarketPrice;
-            if (closes) {
-                const valid = closes.filter(v => v != null);
-                // Take last 5 historical closes, then append today's live price
-                const last5 = valid.slice(-5);
-                if (livePrice && livePrice > 0) last5.push(livePrice);
-                if (last5.length >= 2) return last5;
-            }
-        } catch { continue; }
-    }
-    return [];
+
+    const parse = (data) => {
+        const result = data?.chart?.result?.[0];
+        if (!result) return null;
+        const closes = result.indicators?.quote?.[0]?.close;
+        const livePrice = result.meta?.regularMarketPrice;
+        if (!closes) return null;
+        const valid = closes.filter(v => v != null);
+        const last5 = valid.slice(-5);
+        if (livePrice && livePrice > 0) last5.push(livePrice);
+        return last5.length >= 2 ? last5 : null;
+    };
+
+    return (await firstValidYahooResponse([yUrl], parse)) || [];
 }
 
 // ─────────────────────────────────────────────
