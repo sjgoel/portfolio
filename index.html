@@ -1163,90 +1163,52 @@ async function firstValidYahooResponse(yahooUrls, parser) {
     }
 }
 
-async function fetchPrice(symbol, isIndia) {
-    const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
-    const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1m&range=1d&_=${Date.now()}`;
+let priceFeedCache = null;
+let priceFeedFetchedAt = 0;
 
-    const urls = [
-        yUrl,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl)}`,
-        `https://cors.isomorphic-git.org/${yUrl}`,
-        `https://proxy.cors.sh/${yUrl}`
-    ];
-
-    const parse = (data) => {
-        const result = data?.chart?.result?.[0];
-        if (!result) return null;
-        const meta = result.meta || {};
-        let price = meta.regularMarketPrice;
-        const closes = result.indicators?.quote?.[0]?.close;
-        if (closes) {
-            for (let i = closes.length - 1; i >= 0; i--) {
-                if (closes[i] != null) { price = closes[i]; break; }
-            }
-        }
-        if (!price) price = meta.previousClose || meta.chartPreviousClose;
-        const prevClose = meta.previousClose || meta.chartPreviousClose || price;
-        if (price && price > 0) return { success: true, price, prevClose };
-        return null;
-    };
-
-    const tryOne = async (url) => {
-        const res = await fetch(url, {
-            signal: AbortSignal.timeout(4500),
-            cache: 'no-store'
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const parsed = parse(data);
-        if (!parsed) throw new Error('No price data');
-        return parsed;
-    };
-
-    try {
-        // Race all routes. One bad/slow proxy no longer blocks the page.
-        return await Promise.any(urls.map(tryOne));
-    } catch {
-        return { success: false };
+async function loadPriceFeed(force = false) {
+    const now = Date.now();
+    if (!force && priceFeedCache && (now - priceFeedFetchedAt) < 15000) {
+        return priceFeedCache;
     }
+    try {
+        const res = await fetch(`prices.json?_=${now}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`prices.json HTTP ${res.status}`);
+        const data = await res.json();
+        priceFeedCache = data;
+        priceFeedFetchedAt = now;
+        return data;
+    } catch {
+        return priceFeedCache || { quotes: {} };
+    }
+}
+
+async function fetchPrice(symbol, isIndia) {
+    try {
+        const data = await loadPriceFeed();
+        const q = data?.quotes?.[symbol];
+        const price = Number(q?.price);
+        const prevClose = Number(q?.prevClose ?? q?.price);
+        if (Number.isFinite(price) && price > 0) {
+            return {
+                success: true,
+                price,
+                prevClose: Number.isFinite(prevClose) && prevClose > 0 ? prevClose : price
+            };
+        }
+    } catch {}
+    return { success: false };
 }
 
 // ─────────────────────────────────────────────
 //  SPARKLINE FETCH (5 daily closes)
 // ─────────────────────────────────────────────
 async function fetchSparkline(symbol, isIndia) {
-    const yahooSym = isIndia && !symbol.includes('.') ? symbol + '.NS' : symbol;
-    const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=1d&range=1mo&_=${Date.now()}`;
-    const urls = [
-        yUrl,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl)}`,
-        `https://cors.isomorphic-git.org/${yUrl}`,
-        `https://proxy.cors.sh/${yUrl}`
-    ];
-
-    const tryOne = async (url) => {
-        const res = await fetch(url, {
-            signal: AbortSignal.timeout(4500),
-            cache: 'no-store'
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const result = data?.chart?.result?.[0];
-        if (!result) throw new Error('No chart data');
-        const closes = result.indicators?.quote?.[0]?.close;
-        const livePrice = result.meta?.regularMarketPrice;
-        if (!closes) throw new Error('No closes');
-        const valid = closes.filter(v => v != null);
-        const last5 = valid.slice(-5);
-        if (livePrice && livePrice > 0) last5.push(livePrice);
-        if (last5.length < 2) throw new Error('Not enough points');
-        return last5;
-    };
-
     try {
-        return await Promise.any(urls.map(tryOne));
+        const data = await loadPriceFeed();
+        const arr = data?.quotes?.[symbol]?.sparkline;
+        if (!Array.isArray(arr)) return [];
+        return arr.map(Number).filter(v => Number.isFinite(v) && v > 0).slice(-6);
     } catch {
         return [];
     }
@@ -1493,7 +1455,13 @@ async function updateAllPortfolios() {
     }
 
     setDot(anyError ? 'warn' : 'ok');
-    document.getElementById('lastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    {
+        const feedUpdated = priceFeedCache?.updated ? new Date(priceFeedCache.updated) : null;
+        const feedText = feedUpdated && !Number.isNaN(feedUpdated.getTime())
+            ? feedUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+            : 'unavailable';
+        document.getElementById('lastUpdate').textContent = 'Prices ' + feedText;
+    }
     updateTabTitle();
 }
 
