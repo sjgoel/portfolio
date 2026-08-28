@@ -1316,7 +1316,7 @@ function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {})
         const todayBase    = priceAvailable ? (isToday ? pos.purchasePrice : prevClose) : null;
         const todayPnL     = priceAvailable && todayBase ? (effectivePrice - todayBase) * pos.units : 0;
         const todayPct     = priceAvailable && todayBase > 0 ? ((effectivePrice - todayBase) / todayBase) * 100 : 0;
-        if (priceAvailable) totalCost += cost;
+        totalCost += cost;
         if (priceAvailable) totalValue += val;
         if (priceAvailable) totalTodayPnL += todayPnL;
 
