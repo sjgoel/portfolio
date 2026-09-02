@@ -5,172 +5,298 @@ on:
   schedule:
     - cron: "*/15 * * * *"
 
-    concurrency:
-  group: portfolio-price-update
-  cancel-in-progress: false
-
 permissions:
   contents: write
 
 concurrency:
   group: portfolio-price-update
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update-prices:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
 
       - name: Fetch Yahoo prices for portfolio symbols
-        env:
-          GIST_ID: d5b128bf7d79126034c9c3816a35cd37
         run: |
-          python3 - <<'PY'
+          python <<'PY'
           import json
-          import os
           import time
-          import urllib.parse
           import urllib.request
+          import urllib.error
           from datetime import datetime, timezone
+          from pathlib import Path
 
-          UA = "Mozilla/5.0 (compatible; PortfolioPriceUpdater/1.0)"
-          GIST_ID = os.environ["GIST_ID"]
+          GIST_ID = "d5b128bf7d79126034c9c3816a35cd37"
 
-          def get_json(url, timeout=20):
-              req = urllib.request.Request(
-                  url,
-                  headers={
-                      "User-Agent": UA,
-                      "Accept": "application/json,text/plain,*/*"
-                  }
-              )
-              with urllib.request.urlopen(req, timeout=timeout) as r:
-                  return json.load(r)
+          HEADERS = {
+              "User-Agent": "Mozilla/5.0",
+              "Accept": "application/json,text/plain,*/*"
+          }
 
-          # Read current positions from the same Gist used by the portfolio page.
-          gist = get_json(f"https://api.github.com/gists/{GIST_ID}")
+          def get_json(url, retries=4, timeout=20):
+              last_error = None
+
+              for attempt in range(retries):
+                  try:
+                      req = urllib.request.Request(url, headers=HEADERS)
+
+                      with urllib.request.urlopen(req, timeout=timeout) as response:
+                          return json.loads(response.read().decode("utf-8"))
+
+                  except Exception as e:
+                      last_error = e
+
+                      if attempt < retries - 1:
+                          time.sleep(2 * (attempt + 1))
+
+              raise last_error
+
+
+          # ---------------------------------------------------------
+          # Read portfolio data from Gist
+          # ---------------------------------------------------------
+
+          gist_url = f"https://api.github.com/gists/{GIST_ID}"
+          gist = get_json(gist_url)
+
           files = gist.get("files", {})
-          raw = (
-              (files.get("gistfile1.txt") or {}).get("content")
-              or (files.get("portfolio.json") or {}).get("content")
-          )
-          if not raw:
-              raise RuntimeError("Portfolio data not found in Gist")
 
-          portfolio = json.loads(raw)
-          us = portfolio.get("usPositions") or []
-          india = portfolio.get("indiaPositions") or []
+          portfolio_text = None
 
-          requested = []
-          for p in us:
-              s = str(p.get("symbol", "")).strip()
-              if s:
-                  requested.append((s, s))
-          for p in india:
-              s = str(p.get("symbol", "")).strip()
-              if s:
-                  yahoo = s if "." in s else s + ".NS"
-                  requested.append((s, yahoo))
+          # Your portfolio data is normally in gistfile1.txt
+          for filename in ["gistfile1.txt", "portfolio.json"]:
+              if filename in files:
+                  content = files[filename].get("content", "").strip()
 
-          # Preserve order while removing duplicates.
-          seen = set()
+                  if content and content != "{}":
+                      portfolio_text = content
+                      break
+
+          if not portfolio_text:
+              raise RuntimeError("Could not find portfolio data in Gist")
+
+          portfolio = json.loads(portfolio_text)
+
+          us_positions = portfolio.get("usPositions", [])
+          india_positions = portfolio.get("indiaPositions", [])
+
+
+          # ---------------------------------------------------------
+          # Build list of symbols
+          # ---------------------------------------------------------
+
           symbols = []
-          for display, yahoo in requested:
-              if display not in seen:
-                  seen.add(display)
-                  symbols.append((display, yahoo))
+
+          for p in us_positions:
+              symbol = str(p.get("symbol", "")).strip().upper()
+
+              if symbol:
+                  symbols.append((symbol, symbol))
+
+
+          for p in india_positions:
+              symbol = str(p.get("symbol", "")).strip().upper()
+
+              if not symbol:
+                  continue
+
+              if "." in symbol:
+                  yahoo_symbol = symbol
+              else:
+                  yahoo_symbol = symbol + ".NS"
+
+              symbols.append((symbol, yahoo_symbol))
+
+
+          # Remove duplicates while preserving order
+          seen = set()
+          clean_symbols = []
+
+          for display_symbol, yahoo_symbol in symbols:
+              if display_symbol not in seen:
+                  seen.add(display_symbol)
+                  clean_symbols.append((display_symbol, yahoo_symbol))
+
+
+          # ---------------------------------------------------------
+          # Load previous prices so temporary Yahoo failures
+          # do not wipe working prices
+          # ---------------------------------------------------------
+
+          old_quotes = {}
+
+          try:
+              old_data = json.loads(Path("prices.json").read_text())
+              old_quotes = old_data.get("quotes", {})
+          except Exception:
+              pass
+
 
           quotes = {}
           errors = {}
 
-          for display, yahoo in symbols:
+
+          # ---------------------------------------------------------
+          # Fetch each symbol from Yahoo Finance
+          # ---------------------------------------------------------
+
+          for display_symbol, yahoo_symbol in clean_symbols:
+
               try:
-                  enc = urllib.parse.quote(yahoo, safe=".^=-")
-                  intraday = get_json(
-                      f"https://query1.finance.yahoo.com/v8/finance/chart/{enc}?interval=1m&range=1d"
-                  )
-                  result = (intraday.get("chart", {}).get("result") or [None])[0]
-                  if not result:
-                      raise RuntimeError("No intraday result")
+                  encoded_symbol = urllib.parse.quote(yahoo_symbol)
 
-                  meta = result.get("meta") or {}
-                  closes = (((result.get("indicators") or {}).get("quote") or [{}])[0].get("close") or [])
-                  valid_intraday = [float(x) for x in closes if x is not None]
+                  url = (
+                      "https://query1.finance.yahoo.com/v8/finance/chart/"
+                      + encoded_symbol
+                      + "?interval=5m&range=1d"
+                  )
+
+                  data = get_json(url)
+
+                  result = data["chart"]["result"][0]
+                  meta = result.get("meta", {})
+
                   price = meta.get("regularMarketPrice")
-                  if valid_intraday:
-                      price = valid_intraday[-1]
-                  if price is None:
-                      price = meta.get("previousClose") or meta.get("chartPreviousClose")
-                  prev = meta.get("previousClose") or meta.get("chartPreviousClose") or price
 
-                  daily = get_json(
-                      f"https://query1.finance.yahoo.com/v8/finance/chart/{enc}?interval=1d&range=1mo"
+                  prev_close = (
+                      meta.get("previousClose")
+                      or meta.get("chartPreviousClose")
+                      or price
                   )
-                  dresult = (daily.get("chart", {}).get("result") or [None])[0]
-                  dcloses = []
-                  if dresult:
-                      arr = (((dresult.get("indicators") or {}).get("quote") or [{}])[0].get("close") or [])
-                      dcloses = [float(x) for x in arr if x is not None][-5:]
+
+                  closes = []
+
+                  indicators = result.get("indicators", {})
+                  quote_arrays = indicators.get("quote", [])
+
+                  if quote_arrays:
+                      raw_closes = quote_arrays[0].get("close", [])
+
+                      closes = [
+                          round(float(x), 4)
+                          for x in raw_closes
+                          if x is not None
+                      ]
 
                   if price is None:
-                      raise RuntimeError("No price")
+                      raise RuntimeError("Yahoo returned no market price")
 
-                  spark = dcloses[:]
-                  p = float(price)
-                  if not spark or abs(spark[-1] - p) > 1e-12:
-                      spark.append(p)
+                  sparkline = closes[-6:] if closes else []
 
-                  quotes[display] = {
-                      "price": p,
-                      "prevClose": float(prev) if prev is not None else p,
-                      "sparkline": spark[-6:],
-                      "yahooSymbol": yahoo
+                  quotes[display_symbol] = {
+                      "price": round(float(price), 4),
+                      "prevClose": round(float(prev_close), 4),
+                      "sparkline": sparkline,
+                      "yahooSymbol": yahoo_symbol
                   }
+
+                  print(
+                      f"{display_symbol}: "
+                      f"{quotes[display_symbol]['price']}"
+                  )
+
+                  time.sleep(0.4)
+
+
               except Exception as e:
-                  errors[display] = str(e)
 
-              time.sleep(0.25)
+                  errors[display_symbol] = str(e)
 
-          # If Yahoo has a temporary failure, keep the last known good quote.
-          try:
-              with open("prices.json", "r", encoding="utf-8") as f:
-                  old = json.load(f)
-              for s, q in (old.get("quotes") or {}).items():
-                  quotes.setdefault(s, q)
-          except Exception:
-              pass
+                  print(
+                      f"WARNING: {display_symbol} failed: {e}"
+                  )
 
-          payload = {
+                  # Keep previous successful price if available
+                  if display_symbol in old_quotes:
+                      quotes[display_symbol] = old_quotes[display_symbol]
+
+
+          # ---------------------------------------------------------
+          # Safety check
+          # ---------------------------------------------------------
+
+          if not quotes:
+              raise RuntimeError(
+                  "No prices could be obtained and no previous prices exist"
+              )
+
+
+          # ---------------------------------------------------------
+          # Write prices.json
+          # ---------------------------------------------------------
+
+          output = {
               "updated": datetime.now(timezone.utc).isoformat(),
               "quotes": quotes
           }
-          if errors:
-              payload["errors"] = errors
 
-          with open("prices.json", "w", encoding="utf-8") as f:
-              json.dump(payload, f, indent=2, sort_keys=True)
-              f.write("\n")
-
-          print(f"Wrote prices.json with {len(quotes)} quote(s)")
           if errors:
-              print("Temporary fetch errors:", errors)
+              output["errors"] = errors
+
+          Path("prices.json").write_text(
+              json.dumps(output, indent=2, sort_keys=True)
+              + "\n"
+          )
+
+          print()
+          print(f"Updated {len(quotes)} symbols")
+
+          if errors:
+              print(f"Yahoo errors: {len(errors)}")
+
           PY
 
- - name: Commit updated prices
+
+      - name: Commit updated prices
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add prices.json
-          if git diff --cached --quiet; then
-            echo "No price changes"
-            exit 0
-          fi
+          # Preserve the newly generated file
+          cp prices.json /tmp/prices.json
 
-          git commit -m "Update portfolio prices"
+          # Try up to 3 times in case main changes while this job runs
+          for attempt in 1 2 3
+          do
+            echo "Push attempt $attempt"
 
-          git pull --rebase origin main
-          git push origin main
+            # Get the newest version of main
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Put our newly generated prices back
+            cp /tmp/prices.json prices.json
+
+            git add prices.json
+
+            if git diff --cached --quiet
+            then
+              echo "No price changes to commit"
+              exit 0
+            fi
+
+            git commit -m "Update portfolio prices"
+
+            if git push origin HEAD:main
+            then
+              echo "Prices successfully pushed"
+              exit 0
+            fi
+
+            echo "Repository changed during push. Retrying..."
+            sleep 3
+          done
+
+          echo "Unable to push after 3 attempts"
+          exit 1
