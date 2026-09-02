@@ -1,8 +1,12 @@
 {
+  "errors": {
+    "GOLDBEES": "NSE: 403 Client Error: Forbidden for url: https://www.nseindia.com/"
+  },
   "quotes": {
     "GLDM": {
       "prevClose": 88.11,
       "price": 85.59,
+      "source": "Yahoo",
       "sparkline": [
         85.52,
         85.585,
@@ -11,11 +15,13 @@
         85.58,
         85.59
       ],
+      "stale": false,
       "yahooSymbol": "GLDM"
     },
     "GOLDBEES": {
       "prevClose": 125.34,
       "price": 123.5,
+      "source": "NSE",
       "sparkline": [
         123.45,
         123.48,
@@ -24,11 +30,13 @@
         123.5,
         123.5
       ],
+      "stale": true,
       "yahooSymbol": "GOLDBEES.NS"
     },
     "SIVR": {
       "prevClose": 63.25,
       "price": 60.89,
+      "source": "Yahoo",
       "sparkline": [
         60.81,
         60.88,
@@ -37,8 +45,9 @@
         60.88,
         60.89
       ],
+      "stale": false,
       "yahooSymbol": "SIVR"
     }
   },
-  "updated": "2026-09-02T04:18:04.384566+00:00"
+  "updated": "2026-09-02T06:47:31.550165+00:00"
 }
