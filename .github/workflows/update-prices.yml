@@ -155,14 +155,18 @@ jobs:
               print("Temporary fetch errors:", errors)
           PY
 
-      - name: Commit updated prices
+ - name: Commit updated prices
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add prices.json
           if git diff --cached --quiet; then
             echo "No price changes"
             exit 0
           fi
+
           git commit -m "Update portfolio prices"
-          git push
+
+          git pull --rebase origin main
+          git push origin main
