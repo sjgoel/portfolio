@@ -167,31 +167,38 @@ jobs:
                   result = data["chart"]["result"][0]
                   meta = result.get("meta", {})
 
-                  price = meta.get("regularMarketPrice")
-
                   prev_close = (
-                      meta.get("previousClose")
-                      or meta.get("chartPreviousClose")
-                      or price
-                  )
+    meta.get("previousClose")
+    or meta.get("chartPreviousClose")
+)
 
-                  closes = []
+closes = []
 
-                  indicators = result.get("indicators", {})
-                  quote_arrays = indicators.get("quote", [])
+indicators = result.get("indicators", {})
+quote_arrays = indicators.get("quote", [])
 
-                  if quote_arrays:
-                      raw_closes = quote_arrays[0].get("close", [])
+if quote_arrays:
+    raw_closes = quote_arrays[0].get("close", [])
 
-                      closes = [
-                          round(float(x), 4)
-                          for x in raw_closes
-                          if x is not None
-                      ]
+    closes = [
+        round(float(x), 4)
+        for x in raw_closes
+        if x is not None
+    ]
 
-                  if price is None:
-                      raise RuntimeError("Yahoo returned no market price")
+# Prefer the latest actual intraday traded close.
+# Fall back to Yahoo's regularMarketPrice only if needed.
+if closes:
+    price = closes[-1]
+else:
+    price = meta.get("regularMarketPrice")
 
+if price is None:
+    raise RuntimeError("Yahoo returned no market price")
+
+if prev_close is None:
+    prev_close = price
+    
                   sparkline = closes[-6:] if closes else []
 
                   quotes[display_symbol] = {
