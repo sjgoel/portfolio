@@ -1,17 +1,16 @@
 {
-  "errors": {
-    "GOLDBEES": "NSE: 403 Client Error: Forbidden for url: https://www.nseindia.com/"
-  },
+  "generated": "2026-09-03T06:10:58.923489+00:00",
   "quotes": {
     "GLDM": {
       "prevClose": 85.59,
       "price": 86.89,
+      "quoteUpdated": "2026-09-02T20:00:00+00:00",
       "source": "Yahoo",
       "sparkline": [
-        86.72,
-        86.805,
-        86.785,
-        86.7993,
+        86.775,
+        86.795,
+        86.78,
+        86.81,
         86.89,
         86.89
       ],
@@ -19,9 +18,10 @@
       "yahooSymbol": "GLDM"
     },
     "GOLDBEES": {
-      "prevClose": 125.34,
-      "price": 123.5,
-      "source": "NSE",
+      "prevClose": 123.52,
+      "price": 126.3,
+      "quoteUpdated": "2026-09-03T06:10:58.923449+00:00",
+      "source": "TradingView",
       "sparkline": [
         123.45,
         123.48,
@@ -30,18 +30,19 @@
         123.5,
         123.5
       ],
-      "stale": true,
+      "stale": false,
       "yahooSymbol": "GOLDBEES.NS"
     },
     "SIVR": {
       "prevClose": 60.89,
       "price": 62.1,
+      "quoteUpdated": "2026-09-02T20:00:00+00:00",
       "source": "Yahoo",
       "sparkline": [
-        61.9422,
-        62.0,
+        61.9911,
         62.01,
-        61.99,
+        62.02,
+        62.05,
         62.09,
         62.1
       ],
@@ -49,5 +50,5 @@
       "yahooSymbol": "SIVR"
     }
   },
-  "updated": "2026-09-03T06:00:21.741947+00:00"
+  "updated": "2026-09-03T06:10:58.923485+00:00"
 }
