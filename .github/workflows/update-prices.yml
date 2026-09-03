@@ -57,6 +57,9 @@ jobs:
               "Accept-Language": "en-US,en;q=0.9",
           }
 
+          def utc_now():
+              return datetime.now(timezone.utc).isoformat()
+
           def get_json(url, retries=4, timeout=20):
               last_error = None
               for attempt in range(retries):
@@ -70,7 +73,45 @@ jobs:
                           time.sleep(2 * (attempt + 1))
               raise last_error
 
-          def nse_quote(symbol, retries=3, timeout=15):
+          def tradingview_india_quote(symbol, timeout=15):
+              url = "https://scanner.tradingview.com/india/scan"
+              payload = {
+                  "symbols": {
+                      "tickers": [f"NSE:{symbol}"],
+                      "query": {"types": []},
+                  },
+                  "columns": ["close", "change"],
+              }
+              headers = {
+                  "User-Agent": UA,
+                  "Accept": "application/json",
+                  "Content-Type": "application/json",
+                  "Origin": "https://in.tradingview.com",
+                  "Referer": "https://in.tradingview.com/",
+              }
+              r = requests.post(url, json=payload, headers=headers, timeout=timeout)
+              r.raise_for_status()
+              data = r.json()
+              rows = data.get("data") or []
+              if not rows:
+                  raise RuntimeError(f"TradingView returned no row for NSE:{symbol}")
+              values = rows[0].get("d") or []
+              if not values or values[0] is None:
+                  raise RuntimeError(f"TradingView returned no close for NSE:{symbol}")
+
+              price = float(values[0])
+              change_pct = None
+              if len(values) > 1 and values[1] is not None:
+                  change_pct = float(values[1])
+
+              if change_pct is not None and abs(100.0 + change_pct) > 0.000001:
+                  prev_close = price / (1.0 + change_pct / 100.0)
+              else:
+                  prev_close = price
+
+              return price, prev_close
+
+          def nse_quote(symbol, retries=2, timeout=15):
               last_error = None
               for attempt in range(retries):
                   try:
@@ -83,23 +124,20 @@ jobs:
                               "https://www.nseindia.com/get-quotes/"
                               f"equity?symbol={urllib.parse.quote(symbol)}"
                           ),
-                          "X-Requested-With": "XMLHttpRequest",
                           "Connection": "keep-alive",
                       }
-
-                      r = s.get(
+                      prime = s.get(
                           "https://www.nseindia.com/",
                           headers=headers,
                           timeout=timeout,
                       )
-                      r.raise_for_status()
+                      prime.raise_for_status()
                       time.sleep(0.5)
 
                       url = (
                           "https://www.nseindia.com/api/quote-equity?symbol="
                           + urllib.parse.quote(symbol)
                       )
-
                       r = s.get(url, headers=headers, timeout=timeout)
                       r.raise_for_status()
                       data = r.json()
@@ -107,78 +145,76 @@ jobs:
                       price_info = data.get("priceInfo", {}) or {}
                       metadata = data.get("metadata", {}) or {}
 
-                      price = (
-                          price_info.get("lastPrice")
-                          or metadata.get("lastPrice")
-                      )
-
+                      price = price_info.get("lastPrice") or metadata.get("lastPrice")
                       prev_close = (
                           price_info.get("previousClose")
                           or metadata.get("previousClose")
                           or price
                       )
 
-                      source_time = (
-                          metadata.get("lastUpdateTime")
-                          or metadata.get("lastUpdateTimeStamp")
-                          or data.get("lastUpdateTime")
-                      )
-
                       if price is None:
-                          raise RuntimeError(
-                              f"NSE returned no lastPrice for {symbol}"
-                          )
+                          raise RuntimeError(f"NSE returned no lastPrice for {symbol}")
 
-                      return (
-                          float(price),
-                          float(prev_close) if prev_close is not None else float(price),
-                          source_time,
-                      )
+                      return float(price), float(prev_close)
 
                   except Exception as e:
                       last_error = e
                       if attempt < retries - 1:
-                          time.sleep(2 * (attempt + 1))
+                          time.sleep(2)
               raise last_error
 
-          def yahoo_quote(symbol):
+          def yahoo_quote(symbol, interval="1m"):
               encoded = urllib.parse.quote(symbol)
               url = (
                   "https://query1.finance.yahoo.com/v8/finance/chart/"
                   + encoded
-                  + "?interval=5m&range=1d"
+                  + f"?interval={interval}&range=1d"
               )
+
               data = get_json(url)
               result = data["chart"]["result"][0]
               meta = result.get("meta", {}) or {}
 
-              price = meta.get("regularMarketPrice")
+              timestamps = result.get("timestamp") or []
+              quote_arrays = result.get("indicators", {}).get("quote", [])
+
+              closes = []
+              timed_closes = []
+
+              if quote_arrays:
+                  raw_closes = quote_arrays[0].get("close", []) or []
+                  for i, value in enumerate(raw_closes):
+                      if value is None:
+                          continue
+                      value = float(value)
+                      closes.append(round(value, 4))
+                      if i < len(timestamps):
+                          timed_closes.append((int(timestamps[i]), value))
+
+              if timed_closes:
+                  ts, price = timed_closes[-1]
+                  quote_time = datetime.fromtimestamp(
+                      ts, tz=timezone.utc
+                  ).isoformat()
+              elif closes:
+                  price = float(closes[-1])
+                  quote_time = utc_now()
+              else:
+                  price = meta.get("regularMarketPrice")
+                  quote_time = utc_now()
+
+              if price is None:
+                  raise RuntimeError(f"Yahoo returned no usable price for {symbol}")
+
               prev_close = (
                   meta.get("previousClose")
                   or meta.get("chartPreviousClose")
                   or price
               )
 
-              closes = []
-              quote_arrays = result.get("indicators", {}).get("quote", [])
+              return float(price), float(prev_close), closes[-6:], quote_time
 
-              if quote_arrays:
-                  closes = [
-                      round(float(x), 4)
-                      for x in quote_arrays[0].get("close", [])
-                      if x is not None
-                  ]
-
-              if price is None:
-                  raise RuntimeError(
-                      f"Yahoo returned no market price for {symbol}"
-                  )
-
-              return float(price), float(prev_close), closes[-6:]
-
-          gist = get_json(
-              f"https://api.github.com/gists/{GIST_ID}"
-          )
+          gist = get_json(f"https://api.github.com/gists/{GIST_ID}")
 
           files = gist.get("files", {})
           portfolio_text = None
@@ -191,120 +227,156 @@ jobs:
                       break
 
           if not portfolio_text:
-              raise RuntimeError(
-                  "Could not find portfolio data in Gist"
-              )
+              raise RuntimeError("Could not find portfolio data in Gist")
 
           portfolio = json.loads(portfolio_text)
-
           us_positions = portfolio.get("usPositions", [])
           india_positions = portfolio.get("indiaPositions", [])
 
+          old_data = {}
           old_quotes = {}
 
           try:
-              old_data = json.loads(
-                  Path("prices.json").read_text()
-              )
+              old_data = json.loads(Path("prices.json").read_text())
               old_quotes = old_data.get("quotes", {})
           except Exception:
               pass
 
           quotes = {}
           errors = {}
+          used_stale_fallback = False
           seen = set()
 
           for p in us_positions:
-              symbol = str(
-                  p.get("symbol", "")
-              ).strip().upper()
-
+              symbol = str(p.get("symbol", "")).strip().upper()
               if not symbol or symbol in seen:
                   continue
-
               seen.add(symbol)
 
               try:
-                  price, prev_close, sparkline = yahoo_quote(symbol)
-
+                  price, prev_close, sparkline, quote_time = yahoo_quote(
+                      symbol, interval="1m"
+                  )
                   quotes[symbol] = {
                       "price": round(price, 4),
                       "prevClose": round(prev_close, 4),
                       "sparkline": sparkline,
                       "yahooSymbol": symbol,
                       "source": "Yahoo",
+                      "quoteUpdated": quote_time,
                       "stale": False,
                   }
-
                   print(
                       f"{symbol} [Yahoo]: "
-                      f"{quotes[symbol]['price']}"
+                      f"{quotes[symbol]['price']} @ {quote_time}"
                   )
-
               except Exception as e:
                   errors[symbol] = f"Yahoo: {e}"
-                  print(
-                      f"WARNING: {symbol} Yahoo failed: {e}"
-                  )
-
+                  print(f"WARNING: {symbol} Yahoo failed: {e}")
                   if symbol in old_quotes:
+                      used_stale_fallback = True
                       old = dict(old_quotes[symbol])
                       old["stale"] = True
-                      old["source"] = old.get("source", "Yahoo")
                       quotes[symbol] = old
 
           for p in india_positions:
-              symbol = str(
-                  p.get("symbol", "")
-              ).strip().upper()
-
+              symbol = str(p.get("symbol", "")).strip().upper()
               if not symbol or symbol in seen:
                   continue
-
               seen.add(symbol)
 
+              old_sparkline = []
+              if symbol in old_quotes:
+                  old_sparkline = old_quotes[symbol].get("sparkline", [])
+
               try:
-                  price, prev_close, source_time = nse_quote(symbol)
+                  price, prev_close = tradingview_india_quote(symbol)
+                  quote_time = utc_now()
+                  quotes[symbol] = {
+                      "price": round(price, 4),
+                      "prevClose": round(prev_close, 4),
+                      "sparkline": old_sparkline,
+                      "yahooSymbol": symbol + ".NS",
+                      "source": "TradingView",
+                      "quoteUpdated": quote_time,
+                      "stale": False,
+                  }
+                  print(
+                      f"{symbol} [TradingView]: "
+                      f"{quotes[symbol]['price']}"
+                  )
+                  continue
+              except Exception as e:
+                  print(f"WARNING: {symbol} TradingView failed: {e}")
+                  errors[symbol] = f"TradingView: {e}"
 
-                  old_sparkline = []
-                  if symbol in old_quotes:
-                      old_sparkline = old_quotes[symbol].get("sparkline", [])
-
+              try:
+                  price, prev_close = nse_quote(symbol)
+                  quote_time = utc_now()
                   quotes[symbol] = {
                       "price": round(price, 4),
                       "prevClose": round(prev_close, 4),
                       "sparkline": old_sparkline,
                       "yahooSymbol": symbol + ".NS",
                       "source": "NSE",
-                      "sourceTime": source_time,
+                      "quoteUpdated": quote_time,
                       "stale": False,
                   }
-
                   print(
-                      f"{symbol} [NSE]: "
-                      f"{quotes[symbol]['price']} "
-                      f"(NSE time: {source_time})"
+                      f"{symbol} [NSE fallback]: "
+                      f"{quotes[symbol]['price']}"
                   )
-
+                  continue
               except Exception as e:
-                  errors[symbol] = f"NSE: {e}"
-                  print(
-                      f"WARNING: {symbol} NSE failed: {e}"
-                  )
+                  print(f"WARNING: {symbol} NSE failed: {e}")
+                  errors[symbol] += f" | NSE: {e}"
 
-                  if symbol in old_quotes:
-                      old = dict(old_quotes[symbol])
-                      old["stale"] = True
-                      old["source"] = old.get("source", "NSE")
-                      quotes[symbol] = old
+              try:
+                  yahoo_symbol = symbol + ".NS"
+                  price, prev_close, sparkline, quote_time = yahoo_quote(
+                      yahoo_symbol, interval="1m"
+                  )
+                  quotes[symbol] = {
+                      "price": round(price, 4),
+                      "prevClose": round(prev_close, 4),
+                      "sparkline": sparkline,
+                      "yahooSymbol": yahoo_symbol,
+                      "source": "Yahoo fallback",
+                      "quoteUpdated": quote_time,
+                      "stale": False,
+                  }
+                  print(
+                      f"{symbol} [Yahoo fallback]: "
+                      f"{quotes[symbol]['price']} @ {quote_time}"
+                  )
+                  continue
+              except Exception as e:
+                  print(f"WARNING: {symbol} Yahoo fallback failed: {e}")
+                  errors[symbol] += f" | Yahoo: {e}"
+
+              if symbol in old_quotes:
+                  used_stale_fallback = True
+                  old = dict(old_quotes[symbol])
+                  old["stale"] = True
+                  quotes[symbol] = old
+                  print(
+                      f"STALE: {symbol} using previous saved quote "
+                      f"{old.get('price')}"
+                  )
 
           if not quotes:
               raise RuntimeError(
                   "No prices could be obtained and no previous prices exist"
               )
 
+          if used_stale_fallback:
+              updated = old_data.get("updated") or utc_now()
+          else:
+              updated = utc_now()
+
           output = {
-              "updated": datetime.now(timezone.utc).isoformat(),
+              "updated": updated,
+              "generated": utc_now(),
               "quotes": quotes,
           }
 
@@ -312,18 +384,21 @@ jobs:
               output["errors"] = errors
 
           Path("prices.json").write_text(
-              json.dumps(
-                  output,
-                  indent=2,
-                  sort_keys=True,
-              ) + "\n"
+              json.dumps(output, indent=2, sort_keys=True) + "\n"
           )
 
           print()
           print(f"Updated {len(quotes)} symbols")
+          print(f"Global price timestamp: {updated}")
+
+          if used_stale_fallback:
+              print(
+                  "WARNING: At least one old quote was reused. "
+                  "Global price timestamp was NOT advanced."
+              )
 
           if errors:
-              print(f"Errors: {len(errors)}")
+              print(f"Source errors: {len(errors)}")
 
           PY
 
