@@ -3,14 +3,14 @@ name: Update portfolio prices
 on:
   workflow_dispatch: {}
   schedule:
-- cron: "7,22,37,52 * * * *"
+    - cron: "7,22,37,52 * * * *"
+
 permissions:
   contents: write
 
 concurrency:
   group: portfolio-price-update
   cancel-in-progress: false
-
 jobs:
   update-prices:
     runs-on: ubuntu-latest
