@@ -771,6 +771,10 @@
 // ─────────────────────────────────────────────
 const REFRESH_SEC     = 30;
 
+// Live price backend. Replace this one value after the Cloudflare Worker is deployed.
+// Example: https://portfolio-prices.<your-subdomain>.workers.dev/prices
+const PRICE_API_URL = 'https://portfolio-prices.yellow-credit-740e.workers.dev/';
+
 const DEFAULT_US = [
     { symbol: 'GLDM', units: 1400.657,   purchasePrice: 105.20, note: 'FIDL' },
     { symbol: 'SIVR', units: 986.557,    purchasePrice: 83.56,  note: 'FIDL' }
@@ -1165,21 +1169,43 @@ async function firstValidYahooResponse(yahooUrls, parser) {
 
 let priceFeedCache = null;
 let priceFeedFetchedAt = 0;
+let priceFeedLastError = null;
 
 async function loadPriceFeed(force = false) {
     const now = Date.now();
-    if (!force && priceFeedCache && (now - priceFeedFetchedAt) < 15000) {
+
+    if (!force && priceFeedCache && (now - priceFeedFetchedAt) < 5000) {
         return priceFeedCache;
     }
+
+    if (!PRICE_API_URL || PRICE_API_URL === 'https://portfolio-prices.yellow-credit-740e.workers.dev/') {
+        priceFeedLastError = new Error('Live price API URL is not configured');
+        return priceFeedCache || { quotes: {}, allFresh: false };
+    }
+
     try {
-        const res = await fetch(`prices.json?_=${now}`, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`prices.json HTTP ${res.status}`);
+        const sep = PRICE_API_URL.includes('?') ? '&' : '?';
+        const res = await fetch(`${PRICE_API_URL}${sep}_=${now}`, {
+            cache: 'no-store'
+        });
+
+        if (!res.ok) throw new Error(`Live price API HTTP ${res.status}`);
+
         const data = await res.json();
+
+        if (!data || !data.quotes) {
+            throw new Error('Live price API returned invalid data');
+        }
+
         priceFeedCache = data;
         priceFeedFetchedAt = now;
+        priceFeedLastError = null;
         return data;
-    } catch {
-        return priceFeedCache || { quotes: {} };
+
+    } catch (e) {
+        priceFeedLastError = e;
+        console.warn('Live price fetch failed:', e);
+        return priceFeedCache || { quotes: {}, allFresh: false };
     }
 }
 
@@ -1189,14 +1215,27 @@ async function fetchPrice(symbol, isIndia) {
         const q = data?.quotes?.[symbol];
         const price = Number(q?.price);
         const prevClose = Number(q?.prevClose ?? q?.price);
-        if (Number.isFinite(price) && price > 0) {
+
+        // Never treat an explicitly stale/failed quote as fresh.
+        if (
+            q?.ok !== false &&
+            q?.stale !== true &&
+            Number.isFinite(price) &&
+            price > 0
+        ) {
             return {
                 success: true,
                 price,
-                prevClose: Number.isFinite(prevClose) && prevClose > 0 ? prevClose : price
+                prevClose:
+                    Number.isFinite(prevClose) && prevClose > 0
+                        ? prevClose
+                        : price,
+                source: q?.source || '',
+                quoteUpdated: q?.quoteUpdated || null
             };
         }
     } catch {}
+
     return { success: false };
 }
 
@@ -1206,9 +1245,17 @@ async function fetchPrice(symbol, isIndia) {
 async function fetchSparkline(symbol, isIndia) {
     try {
         const data = await loadPriceFeed();
-        const arr = data?.quotes?.[symbol]?.sparkline;
+        const q = data?.quotes?.[symbol];
+
+        if (q?.ok === false || q?.stale === true) return [];
+
+        const arr = q?.sparkline;
         if (!Array.isArray(arr)) return [];
-        return arr.map(Number).filter(v => Number.isFinite(v) && v > 0).slice(-6);
+
+        return arr
+            .map(Number)
+            .filter(v => Number.isFinite(v) && v > 0)
+            .slice(-6);
     } catch {
         return [];
     }
@@ -1385,9 +1432,15 @@ async function updateAllPortfolios() {
     setBadge('usMarketBadge',    usMarketStatus(), 'us');
     setBadge('indiaMarketBadge', indiaMarketStatus(), 'india');
 
+    // One fresh server-side price request per refresh cycle.
+    // The Worker, not GitHub cron, supplies current prices.
+    await loadPriceFeed(true);
+
     const usOpen    = usMarketStatus()    !== 'closed';
     const indiaOpen = indiaMarketStatus() !== 'closed';
-    let anyError = false;
+    let anyError =
+        !!priceFeedLastError ||
+        priceFeedCache?.allFresh === false;
 
     // ── 1. US SUMMARY — fetch all unique symbols in parallel ──
     if (usPositions.length > 0) {
@@ -1456,11 +1509,26 @@ async function updateAllPortfolios() {
 
     setDot(anyError ? 'warn' : 'ok');
     {
-        const feedUpdated = priceFeedCache?.updated ? new Date(priceFeedCache.updated) : null;
-        const feedText = feedUpdated && !Number.isNaN(feedUpdated.getTime())
-            ? feedUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        const feedGenerated = priceFeedCache?.generated || priceFeedCache?.updated;
+        const feedDate = feedGenerated ? new Date(feedGenerated) : null;
+        const feedText = feedDate && !Number.isNaN(feedDate.getTime())
+            ? feedDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            })
             : 'unavailable';
-        document.getElementById('lastUpdate').textContent = 'Prices ' + feedText;
+
+        const stale =
+            anyError ||
+            priceFeedLastError ||
+            priceFeedCache?.allFresh === false;
+
+        // "Live" means a successful current backend fetch. If anything failed,
+        // say STALE explicitly rather than showing an old price with a fresh-looking label.
+        document.getElementById('lastUpdate').textContent =
+            stale
+                ? `⚠ STALE · fetched ${feedText}`
+                : `Live ${feedText}`;
     }
     updateTabTitle();
 }
