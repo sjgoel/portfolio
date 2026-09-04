@@ -1,7 +1,4 @@
-if (!PRICE_API_URL) {
-    priceFeedLastError = new Error('Live price API URL is not configured');
-    return priceFeedCache || { quotes: {}, allFresh: false };
-}<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1181,10 +1178,10 @@ async function loadPriceFeed(force = false) {
         return priceFeedCache;
     }
 
-   if (!PRICE_API_URL) {
-    priceFeedLastError = new Error('Live price API URL is not configured');
-    return priceFeedCache || { quotes: {}, allFresh: false };
-}
+    if (!PRICE_API_URL) {
+        priceFeedLastError = new Error('Live price API URL is not configured');
+        return priceFeedCache || { quotes: {}, allFresh: false };
+    }
     try {
         const sep = PRICE_API_URL.includes('?') ? '&' : '?';
         const res = await fetch(`${PRICE_API_URL}${sep}_=${now}`, {
