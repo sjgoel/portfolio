@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -225,7 +226,14 @@
         }
 
         /* Mobile: stack cards vertically, use 2x2 grid for stats */
-        @media (max-width: 600px) {
+        
+@media (max-width: 1100px) {
+    .performance-grid { grid-template-columns:1fr 1fr; }
+    .performance-card.gold-card { grid-column:1 / -1; }
+}
+@media (max-width: 600px) {
+    .performance-grid { grid-template-columns:1fr; }
+    .performance-card.gold-card { grid-column:auto; }
     .summary-key-value { font-size:18px; }
     .perf-y-label { width:44px; font-size:8px; }
     .perf-grid-line, .perf-start-line { left:49px; }
@@ -726,7 +734,7 @@ body {
 .sc-stat.total-pl .sc-value.red { color:var(--red); }
 
 /* performance */
-.performance-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.performance-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .performance-card {
     background:#fff;
     border:1px solid #e5e7eb;
@@ -750,13 +758,13 @@ body {
 .perf-tab.active.india { background:#e66a00; border-color:#e66a00; color:#fff; }
 
 .perf-tab.active.gold { background:#2563eb; border-color:#b8870b; color:#fff; }
-.performance-card.gold-card { grid-column:1 / -1; }
+.performance-card.gold-card { grid-column:auto; }
 
 .gold-legend {
     display:flex;
     align-items:center;
     gap:14px;
-    margin:9px 58px 0 58px;
+    margin:9px 48px 0 48px;
     color:#6b7280;
     font:10px var(--mono);
     flex-wrap:wrap;
@@ -772,21 +780,21 @@ body {
     border-radius:2px;
 }
 .gold-legend-swatch.gldm { background:#2563eb; }
-.gold-legend-swatch.goldbees { background:#ffed29; }
+.gold-legend-swatch.goldbees { background:#b45309; }
 
 .gold-line-svg {
     position:absolute;
-    left:58px;
+    left:48px;
     top:0;
-    width:calc(100% - 116px);
+    width:calc(100% - 96px);
     height:100%;
     z-index:2;
     overflow:hidden;
 }
 .gold-grid-line {
     position:absolute;
-    left:58px;
-    right:58px;
+    left:48px;
+    right:48px;
     border-top:1px solid #e5e7eb;
     z-index:1;
     pointer-events:none;
@@ -794,7 +802,7 @@ body {
 .gold-y-label-left,
 .gold-y-label-right {
     position:absolute;
-    width:52px;
+    width:44px;
     transform:translateY(50%);
     color:#6b7280;
     font:9px var(--mono);
@@ -1139,7 +1147,7 @@ body {
             <div class="gold-legend">
                 <span class="gold-legend-item"><span class="gold-legend-swatch gldm"></span>GLDM ($)</span>
                 <span class="gold-legend-item"><span class="gold-legend-swatch goldbees"></span>GOLDBEES (₹)</span>
-                <span>Two price lines · Left axis = GLDM $ · Right axis = GOLDBEES ₹</span>
+                <span>GLDM = blue · GOLDBEES = dark amber · Left axis $ · Right axis ₹</span>
             </div>
             <div class="performance-chart"><div class="perf-bars" id="goldPerfBars"><div class="perf-loading">Loading…</div></div></div>
             <div class="perf-axis-labels"><span id="goldPerfStart">Start</span><span id="goldPerfMid">Mid</span><span id="goldPerfEnd">Latest</span></div>
@@ -2422,8 +2430,8 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
         <div class="gold-axis-title-right">GOLDBEES ₹</div>
         ${gridHtml.join('')}
         <svg class="gold-line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="GLDM and GOLDBEES price lines">
-            <polyline points="${gPoints}" fill="none" stroke="#2563eb" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
-            <polyline points="${iPoints}" fill="none" stroke="#ffed29" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            <polyline points="${gPoints}" fill="none" stroke="#2563eb" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            <polyline points="${iPoints}" fill="none" stroke="#b45309" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
         </svg>
     `;
 
@@ -2438,7 +2446,7 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
     retEl.innerHTML =
         `<span style="color:#2563eb">GLDM $${gLatest.price.toFixed(2)}</span>` +
         ` &nbsp;·&nbsp; ` +
-        `<span style="color:#9a8500">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>`;
+        `<span style="color:#b45309">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>`;
     retEl.className = 'perf-return';
 
     statusEl.textContent = `Exact ETF prices · ${range}`;
