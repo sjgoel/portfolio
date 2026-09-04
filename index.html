@@ -239,10 +239,10 @@
     .perf-bar-area { left:49px; gap:4px; }
     .perf-axis-labels { margin-left:49px; }
     .gold-y-label-left, .gold-y-label-right { width:46px; font-size:8px; }
-    .gold-grid-line { left:50px; right:50px; }
-    .gold-line-svg { left:50px; width:calc(100% - 100px); }
+    .gold-grid-line { left:72px; right:50px; }
+    .gold-line-svg { left:72px; width:calc(100% - 122px); }
     .gold-v-grid-line { display:none; }
-    .gold-legend { margin-left:50px; margin-right:50px; }
+    .gold-legend { margin-left:72px; margin-right:50px; }
             .top-summary {
                 grid-template-columns: 1fr;
             }
@@ -754,7 +754,7 @@ body {
     font:700 10px var(--mono);
     cursor:pointer;
 }
-.perf-tab.active.us { background:#2563eb; border-color:#2563eb; color:#fff; }
+.perf-tab.active.us { background:#2563eb; border-color:#60a5fa; color:#fff; }
 .perf-tab.active.india { background:#e66a00; border-color:#e66a00; color:#fff; }
 
 .perf-tab.active.gold { background:#2563eb; border-color:#b8870b; color:#fff; }
@@ -764,7 +764,7 @@ body {
     display:flex;
     align-items:center;
     gap:14px;
-    margin:9px 48px 0 48px;
+    margin:9px 48px 0 76px;
     color:#6b7280;
     font:10px var(--mono);
     flex-wrap:wrap;
@@ -779,21 +779,22 @@ body {
     height:3px;
     border-radius:2px;
 }
-.gold-legend-swatch.gldm { background:#2563eb; }
+.gold-legend-swatch.gldm { background:#60a5fa; }
 .gold-legend-swatch.goldbees { background:#ff9000; }
+.gold-legend-swatch.spot { background:#000000; }
 
 .gold-line-svg {
     position:absolute;
-    left:48px;
+    left:76px;
     top:0;
-    width:calc(100% - 96px);
+    width:calc(100% - 124px);
     height:100%;
     z-index:2;
     overflow:hidden;
 }
 .gold-grid-line {
     position:absolute;
-    left:48px;
+    left:76px;
     right:48px;
     border-top:1px solid #e5e7eb;
     z-index:1;
@@ -821,8 +822,18 @@ body {
 }
 .gold-y-label-left {
     left:0;
+    width:70px;
     padding-right:5px;
     text-align:right;
+    line-height:1.2;
+}
+.gold-y-label-left .spot-axis {
+    color:#000000;
+    font-weight:700;
+}
+.gold-y-label-left .gldm-axis {
+    color:#60a5fa;
+    font-weight:700;
 }
 .gold-y-label-right {
     right:0;
@@ -1144,7 +1155,7 @@ body {
 
         <div class="performance-card gold-card">
             <div class="performance-head">
-                <div class="performance-title">🟡 Gold ETFs · GLDM vs GOLDBEES</div>
+                <div class="performance-title">🟡 Gold · GLDM vs GOLDBEES vs Spot</div>
                 <div class="performance-tabs">
                     <button class="perf-tab active gold" data-market="gold" data-range="1D" onclick="setGoldPerformanceRange('1D')">1D</button>
                     <button class="perf-tab" data-market="gold" data-range="5D" onclick="setGoldPerformanceRange('5D')">5D</button>
@@ -1155,7 +1166,8 @@ body {
             <div class="gold-legend">
                 <span class="gold-legend-item"><span class="gold-legend-swatch gldm"></span>GLDM ($)</span>
                 <span class="gold-legend-item"><span class="gold-legend-swatch goldbees"></span>GOLDBEES (₹)</span>
-                <span>GLDM = blue · GOLDBEES = dark amber · Left axis $ · Right axis ₹</span>
+                <span class="gold-legend-item"><span class="gold-legend-swatch spot"></span>Spot XAU/USD ($/oz)</span>
+                <span>Left axis = GLDM + Spot · Right axis = GOLDBEES</span>
             </div>
             <div class="performance-chart"><div class="perf-bars" id="goldPerfBars"><div class="perf-loading">Loading…</div></div></div>
             <div class="perf-axis-labels"><span id="goldPerfStart">Start</span><span id="goldPerfMid">Mid</span><span id="goldPerfEnd">Latest</span></div>
@@ -2357,31 +2369,35 @@ function axisBounds(values, preferredTicks = 4) {
     return { min: axisMin, max: axisMax };
 }
 
-function renderGoldLines(range, gldmPoints, goldbeesPoints) {
+function renderGoldLines(range, gldmPoints, goldbeesPoints, spotPoints) {
     const chartEl = document.getElementById('goldPerfBars');
     const retEl = document.getElementById('goldPerfReturn');
     const statusEl = document.getElementById('goldPerfStatus');
     if (!chartEl || !retEl || !statusEl) return;
 
-    if (!gldmPoints || !goldbeesPoints || gldmPoints.length < 2 || goldbeesPoints.length < 2) {
+    if (!gldmPoints || !goldbeesPoints ||
+        gldmPoints.length < 2 || goldbeesPoints.length < 2) {
         chartEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
         retEl.textContent = '—';
         statusEl.textContent = 'History unavailable';
         return;
     }
 
-    const gClean = gldmPoints
+    const hasSpot = Array.isArray(spotPoints) && spotPoints.length >= 2;
+
+    const clean = points => points
         .map(p => ({ ts:Number(p.ts), price:Number(p.price) }))
         .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0);
 
-    const iClean = goldbeesPoints
-        .map(p => ({ ts:Number(p.ts), price:Number(p.price) }))
-        .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0);
+    const gSeries = resampleSeriesExact(clean(gldmPoints), PERFORMANCE_BAR_COUNT);
+    const iSeries = resampleSeriesExact(clean(goldbeesPoints), PERFORMANCE_BAR_COUNT);
+    const sSeries = hasSpot
+        ? resampleSeriesExact(clean(spotPoints), PERFORMANCE_BAR_COUNT)
+        : [];
 
-    const gSeries = resampleSeriesExact(gClean, PERFORMANCE_BAR_COUNT);
-    const iSeries = resampleSeriesExact(iClean, PERFORMANCE_BAR_COUNT);
-    const n = Math.min(gSeries.length, iSeries.length);
-
+    const n = hasSpot
+        ? Math.min(gSeries.length, iSeries.length, sSeries.length)
+        : Math.min(gSeries.length, iSeries.length);
     if (n < 2) {
         chartEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
         retEl.textContent = '—';
@@ -2391,21 +2407,26 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
 
     gSeries.length = n;
     iSeries.length = n;
+    if (hasSpot) sSeries.length = n;
 
     const liveGLDM = Number(lastPrices.GLDM);
     const liveGB = Number(lastPrices.GOLDBEES);
+    const liveSpot = Number(lastPrices.XAUUSD);
 
-    if (Number.isFinite(liveGLDM) && liveGLDM > 0) {
+    if (Number.isFinite(liveGLDM) && liveGLDM > 0)
         gSeries[n - 1] = { ts:Math.floor(Date.now()/1000), price:liveGLDM };
-    }
-    if (Number.isFinite(liveGB) && liveGB > 0) {
+    if (Number.isFinite(liveGB) && liveGB > 0)
         iSeries[n - 1] = { ts:Math.floor(Date.now()/1000), price:liveGB };
-    }
+    if (hasSpot && Number.isFinite(liveSpot) && liveSpot > 0)
+        sSeries[n - 1] = { ts:Math.floor(Date.now()/1000), price:liveSpot };
 
     const gBounds = axisBounds(gSeries.map(p => p.price), 4);
     const iBounds = axisBounds(iSeries.map(p => p.price), 4);
+    const sBounds = hasSpot ? axisBounds(sSeries.map(p => p.price), 4) : null;
+
     const gSpan = gBounds.max - gBounds.min;
     const iSpan = iBounds.max - iBounds.min;
+    const sSpan = hasSpot ? (sBounds.max - sBounds.min) : 1;
 
     const gridHtml = [];
     for (let t = 0; t <= 4; t++) {
@@ -2413,10 +2434,13 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
         const bottomPct = frac * 100;
         const gTick = gBounds.min + gSpan * frac;
         const iTick = iBounds.min + iSpan * frac;
+        const sTick = hasSpot ? (sBounds.min + sSpan * frac) : null;
 
         gridHtml.push(`
             <div class="gold-grid-line" style="bottom:${bottomPct}%"></div>
-            <div class="gold-y-label-left" style="bottom:${bottomPct}%">$${gTick.toFixed(2)}</div>
+            <div class="gold-y-label-left" style="bottom:${bottomPct}%">
+                <span class="gldm-axis">$${gTick.toFixed(2)}</span>${hasSpot ? `<br><span class="spot-axis">$${Math.round(sTick).toLocaleString('en-US')}</span>` : ''}
+            </div>
             <div class="gold-y-label-right" style="bottom:${bottomPct}%">₹${iTick.toFixed(2)}</div>
         `);
     }
@@ -2426,7 +2450,7 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
     for (let t = 0; t <= vGridCount; t++) {
         const leftPct = (t / vGridCount) * 100;
         vGridHtml.push(
-            `<div class="gold-v-grid-line" style="left:calc(48px + (100% - 96px) * ${leftPct / 100})"></div>`
+            `<div class="gold-v-grid-line" style="left:calc(76px + (100% - 124px) * ${leftPct / 100})"></div>`
         );
     }
 
@@ -2441,15 +2465,17 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
 
     const gPoints = toPoints(gSeries, gBounds);
     const iPoints = toPoints(iSeries, iBounds);
+    const sPoints = hasSpot ? toPoints(sSeries, sBounds) : '';
 
     chartEl.innerHTML = `
-        <div class="gold-axis-title-left">GLDM $</div>
+        <div class="gold-axis-title-left">GLDM $ / SPOT $/oz</div>
         <div class="gold-axis-title-right">GOLDBEES ₹</div>
         ${gridHtml.join('')}
         ${vGridHtml.join('')}
-        <svg class="gold-line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="GLDM and GOLDBEES price lines">
-            <polyline points="${gPoints}" fill="none" stroke="#2563eb" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
+        <svg class="gold-line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="GLDM, GOLDBEES and spot gold price lines">
+            <polyline points="${gPoints}" fill="none" stroke="#60a5fa" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
             <polyline points="${iPoints}" fill="none" stroke="#ff9000" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            ${hasSpot ? `<polyline points="${sPoints}" fill="none" stroke="#000000" stroke-width="5" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>` : ''}
         </svg>
     `;
 
@@ -2460,14 +2486,61 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
 
     const gLatest = gSeries[n - 1];
     const iLatest = iSeries[n - 1];
+    const sLatest = hasSpot ? sSeries[n - 1] : null;
 
     retEl.innerHTML =
-        `<span style="color:#2563eb">GLDM $${gLatest.price.toFixed(2)}</span>` +
+        `<span style="color:#60a5fa">GLDM $${gLatest.price.toFixed(2)}</span>` +
         ` &nbsp;·&nbsp; ` +
-        `<span style="color:#ff9000">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>`;
+        `<span style="color:#ff9000">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>` +
+        (sLatest ? ` &nbsp;·&nbsp; <span style="color:#000000">SPOT $${sLatest.price.toFixed(2)}</span>` : '');
     retEl.className = 'perf-return';
 
-    statusEl.textContent = `Exact ETF prices · ${range}`;
+    statusEl.textContent = hasSpot ? `Exact prices · ${range} · Spot loaded` : `Exact ETF prices · ${range} · Spot unavailable`;
+}
+
+
+async function getSpotGoldHistoryDirect(range) {
+    const noCache = Date.now();
+    let url;
+
+    if (range === '1D') {
+        url = `https://xaus.com/api/v1/intraday?symbol=xau&hours=24&_=${noCache}`;
+        const res = await fetch(url, { cache:'no-store' });
+        if (!res.ok) throw new Error(`XAUS intraday HTTP ${res.status}`);
+        const data = await res.json();
+        const raw = Array.isArray(data?.points) ? data.points : [];
+
+        const points = raw.map(p => ({
+            ts: Number(p?.t),
+            price: Number(p?.p)
+        })).filter(p =>
+            Number.isFinite(p.ts) && p.ts > 0 &&
+            Number.isFinite(p.price) && p.price > 0
+        );
+
+        if (points.length < 2) throw new Error('XAUS intraday returned too few points');
+        return points;
+    }
+
+    url = `https://xaus.com/api/v1/history?_=${noCache}`;
+    const res = await fetch(url, { cache:'no-store' });
+    if (!res.ok) throw new Error(`XAUS history HTTP ${res.status}`);
+    const data = await res.json();
+    const raw = Array.isArray(data?.points) ? data.points : [];
+
+    const days = range === '5D' ? 5 : (range === '1M' ? 31 : 93);
+    const slice = raw.slice(-days);
+
+    const points = slice.map(p => ({
+        ts: Math.floor(new Date(`${p?.d}T12:00:00Z`).getTime() / 1000),
+        price: Number(p?.c)
+    })).filter(p =>
+        Number.isFinite(p.ts) && p.ts > 0 &&
+        Number.isFinite(p.price) && p.price > 0
+    );
+
+    if (points.length < 2) throw new Error(`XAUS ${range} returned too few points`);
+    return points;
 }
 
 async function loadGoldPerformance(range = performanceRange.gold, force = false) {
@@ -2484,7 +2557,32 @@ async function loadGoldPerformance(range = performanceRange.gold, force = false)
             getPerformanceHistory('GOLDBEES', range, force)
         ]);
 
-        renderGoldLines(range, gldmPoints, goldbeesPoints);
+        let spotPoints = [];
+        let spotSource = 'XAUS direct';
+
+        // Primary path: fetch directly in the browser. XAUS explicitly permits CORS.
+        try {
+            spotPoints = await getSpotGoldHistoryDirect(range);
+        } catch (directErr) {
+            console.warn('Direct XAUS spot history failed; trying Worker fallback', directErr);
+
+            // Fallback path: Worker endpoint.
+            try {
+                spotPoints = await getPerformanceHistory('XAUUSD', range, force);
+                spotSource = 'Worker fallback';
+            } catch (workerErr) {
+                console.warn('Worker spot history fallback failed', workerErr);
+                spotPoints = [];
+                spotSource = 'unavailable';
+            }
+        }
+
+        renderGoldLines(range, gldmPoints, goldbeesPoints, spotPoints);
+
+        const statusEl = document.getElementById('goldPerfStatus');
+        if (statusEl && spotPoints.length >= 2) {
+            statusEl.textContent = `Exact prices · ${range} · Spot loaded (${spotSource})`;
+        }
     } catch (e) {
         console.warn('Gold comparison failed', e);
         barsEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
