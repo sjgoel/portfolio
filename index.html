@@ -226,6 +226,15 @@
 
         /* Mobile: stack cards vertically, use 2x2 grid for stats */
         @media (max-width: 600px) {
+    .summary-key-value { font-size:18px; }
+    .perf-y-label { width:44px; font-size:8px; }
+    .perf-grid-line, .perf-start-line { left:49px; }
+    .perf-bar-area { left:49px; gap:4px; }
+    .perf-axis-labels { margin-left:49px; }
+    .gold-y-label-left, .gold-y-label-right { width:46px; font-size:8px; }
+    .gold-grid-line { left:50px; right:50px; }
+    .gold-pair-area { left:50px; right:50px; gap:6px; }
+    .gold-legend { margin-left:50px; margin-right:50px; }
             .top-summary {
                 grid-template-columns: 1fr;
             }
@@ -680,12 +689,28 @@ body {
     gap:7px;
 }
 .us-card .summary-card-title, .india-card .summary-card-title { color:#172033; }
-.summary-main-value {
+.summary-key-metrics {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin:5px 0 14px;
+}
+.summary-key-metric {
+    min-width:0;
+}
+.summary-key-label {
+    font-size:9px;
+    color:#6b7280;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    margin-bottom:3px;
+}
+.summary-key-value {
     font-family:var(--mono);
-    font-size:28px;
+    font-size:22px;
     font-weight:800;
-    margin:3px 0 14px;
     color:#172033;
+    white-space:nowrap;
 }
 .summary-card-stats {
     display:grid;
@@ -723,51 +748,201 @@ body {
 }
 .perf-tab.active.us { background:#2563eb; border-color:#2563eb; color:#fff; }
 .perf-tab.active.india { background:#e66a00; border-color:#e66a00; color:#fff; }
+
+.perf-tab.active.gold { background:#b8870b; border-color:#b8870b; color:#fff; }
+.performance-card.gold-card { grid-column:1 / -1; }
+
+.gold-legend {
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin:9px 54px 0 54px;
+    color:#6b7280;
+    font:10px var(--mono);
+    flex-wrap:wrap;
+}
+.gold-legend-item {
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+}
+.gold-legend-swatch {
+    width:10px;
+    height:10px;
+    border-radius:3px;
+}
+.gold-legend-swatch.gldm { background:#b8870b; }
+.gold-legend-swatch.goldbees { background:#e66a00; }
+
+.gold-pair-area {
+    position:absolute;
+    left:58px;
+    right:58px;
+    top:0;
+    bottom:0;
+    display:flex;
+    gap:9px; /* gap only between time periods */
+    align-items:flex-end;
+    z-index:2;
+}
+.gold-pair-slot {
+    position:relative;
+    flex:1;
+    min-width:8px;
+    height:100%;
+}
+.gold-pair-bar {
+    position:absolute;
+    bottom:0;
+    width:50%;
+    min-height:2px;
+}
+.gold-pair-bar.gldm {
+    left:0;
+    border-radius:4px 0 0 2px;
+    background:linear-gradient(180deg,#f5d56b,#b8870b);
+}
+.gold-pair-bar.goldbees {
+    right:0;
+    border-radius:0 4px 2px 0;
+    background:linear-gradient(180deg,#fb923c,#e66a00);
+}
+.gold-grid-line {
+    position:absolute;
+    left:58px;
+    right:58px;
+    border-top:1px solid #e5e7eb;
+    z-index:1;
+    pointer-events:none;
+}
+.gold-y-label-left,
+.gold-y-label-right {
+    position:absolute;
+    width:52px;
+    transform:translateY(50%);
+    color:#6b7280;
+    font:9px var(--mono);
+    background:rgba(255,255,255,.90);
+    z-index:4;
+    white-space:nowrap;
+    pointer-events:none;
+}
+.gold-y-label-left {
+    left:0;
+    padding-right:5px;
+    text-align:right;
+}
+.gold-y-label-right {
+    right:0;
+    padding-left:5px;
+    text-align:left;
+}
+.gold-axis-title-left,
+.gold-axis-title-right {
+    position:absolute;
+    top:4px;
+    color:#9ca3af;
+    font:8px var(--mono);
+    z-index:5;
+    pointer-events:none;
+}
+.gold-axis-title-left { left:4px; }
+.gold-axis-title-right { right:4px; }
+
+
 .performance-chart {
     position:relative;
-    height:210px;
+    height:220px;
     margin-top:13px;
-    border-left:1px solid #e5e7eb;
-    border-bottom:1px solid #e5e7eb;
-    background:
-      linear-gradient(to bottom, transparent 24.7%, #eef0f3 25%, transparent 25.3%),
-      linear-gradient(to bottom, transparent 49.7%, #cbd5e1 50%, transparent 50.3%),
-      linear-gradient(to bottom, transparent 74.7%, #eef0f3 75%, transparent 75.3%);
+    border-bottom:1px solid #d1d5db;
     overflow:hidden;
+    background:#fff;
 }
 .perf-bars {
     position:absolute;
-    inset:0 7px 0 7px;
+    inset:0;
+}
+.perf-grid-line {
+    position:absolute;
+    left:54px;
+    right:6px;
+    border-top:1px solid #e5e7eb;
+    z-index:1;
+    pointer-events:none;
+}
+.perf-grid-line.zero-ref {
+    border-top:1px dashed #9ca3af;
+}
+.perf-y-label {
+    position:absolute;
+    left:0;
+    width:48px;
+    padding-right:5px;
+    text-align:right;
+    transform:translateY(-50%);
+    color:#6b7280;
+    font:9px var(--mono);
+    background:rgba(255,255,255,.88);
+    z-index:3;
+    white-space:nowrap;
+    pointer-events:none;
+}
+.perf-bar-area {
+    position:absolute;
+    left:54px;
+    right:6px;
+    top:0;
+    bottom:0;
     display:flex;
     gap:6px;
+    align-items:flex-end;
+    z-index:2;
 }
 .perf-slot { position:relative; flex:1; min-width:5px; height:100%; }
 .perf-bar {
     position:absolute;
+    bottom:0;
     left:17%;
     width:66%;
     min-height:2px;
     border-radius:5px 5px 2px 2px;
     transition:height .2s ease;
 }
-.perf-bar.positive.us { bottom:50%; background:linear-gradient(180deg,#60a5fa,#2563eb); }
-.perf-bar.positive.india { bottom:50%; background:linear-gradient(180deg,#fb923c,#e66a00); }
-.perf-bar.negative { top:50%; background:linear-gradient(180deg,#fca5a5,#dc2626); border-radius:2px 2px 5px 5px; }
-.perf-axis-labels { display:flex; justify-content:space-between; gap:6px; margin-top:5px; color:#6b7280; font:9px var(--mono); }
+.perf-bar.us { background:linear-gradient(180deg,#60a5fa,#2563eb); }
+.perf-bar.india { background:linear-gradient(180deg,#fb923c,#e66a00); }
+.perf-bar.below-start { background:linear-gradient(180deg,#fca5a5,#dc2626); }
+.perf-start-line {
+    position:absolute;
+    left:54px;
+    right:6px;
+    border-top:1px dashed rgba(17,24,39,.45);
+    z-index:2;
+    pointer-events:none;
+}
+.perf-start-label {
+    position:absolute;
+    right:8px;
+    transform:translateY(-110%);
+    padding:2px 4px;
+    border-radius:4px;
+    background:rgba(255,255,255,.92);
+    color:#6b7280;
+    font:8px var(--mono);
+    z-index:4;
+    pointer-events:none;
+}
+.perf-axis-labels {
+    display:flex;
+    justify-content:space-between;
+    gap:6px;
+    margin:5px 6px 0 54px;
+    color:#6b7280;
+    font:9px var(--mono);
+}
 .performance-foot { display:flex; justify-content:space-between; gap:12px; margin-top:7px; color:#6b7280; font:10px var(--mono); }
 .performance-foot .perf-return.green { color:var(--green); font-weight:700; }
 .performance-foot .perf-return.red { color:var(--red); font-weight:700; }
-.perf-loading { display:flex; align-items:center; justify-content:center; height:100%; color:#9ca3af; font:11px var(--mono); }
-
-/* separate holdings */
-.holdings-section { margin-top:15px; }
-.holdings-card {
-    background:#fff;
-    border:1px solid #e5e7eb;
-    border-radius:15px;
-    overflow:hidden;
-    box-shadow:0 3px 14px rgba(0,0,0,.04);
-}
+.perf-loading { display:flex; align-items:center; justify-content:center; height:100%; color:#6b7280; font:10px var(--mono); }
 .holdings-titlebar {
     display:flex;
     justify-content:space-between;
@@ -779,6 +954,35 @@ body {
 .holdings-titlebar.india { background:#fff7ed; border-top:3px solid #e66a00; }
 .holdings-title { font-size:14px; font-weight:800; }
 .holdings-count { color:#6b7280; font:10px var(--mono); }
+
+.broker-group {
+    border-bottom:1px solid #e5e7eb;
+}
+.broker-group:last-child { border-bottom:none; }
+.broker-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:8px 14px;
+    background:#f8fafc;
+    border-bottom:1px solid #e5e7eb;
+}
+.broker-name {
+    font-size:11px;
+    font-weight:800;
+    color:#374151;
+}
+.broker-meta {
+    color:#6b7280;
+    font:9px var(--mono);
+}
+.account-tag {
+    display:inline-block;
+    margin-top:3px;
+    color:#6b7280;
+    font:9px var(--mono);
+}
 .table-wrap { background:#fff !important; border:0; border-radius:0; overflow-x:auto; }
 .holdings-card table { table-layout:fixed; width:100%; border-collapse:collapse; }
 .holdings-card table th:nth-child(1), .holdings-card table td:nth-child(1) { width:18%; text-align:left; }
@@ -853,7 +1057,16 @@ body {
     <div class="top-summary">
         <div class="summary-card us-card">
             <div class="summary-card-title"><span>🇺🇸</span> US Portfolio <span class="market-badge closed" id="usMarketBadge">Closed</span></div>
-            <div class="summary-main-value" id="usTotalValue">$–</div>
+            <div class="summary-key-metrics">
+                <div class="summary-key-metric">
+                    <div class="summary-key-label">Invested Amount</div>
+                    <div class="summary-key-value" id="usInvestedAmount">$–</div>
+                </div>
+                <div class="summary-key-metric">
+                    <div class="summary-key-label">Current Value</div>
+                    <div class="summary-key-value" id="usTotalValue">$–</div>
+                </div>
+            </div>
             <div class="summary-card-stats">
                 <div class="sc-stat">
                     <div class="sc-label">Today P/L</div>
@@ -872,7 +1085,16 @@ body {
 
         <div class="summary-card india-card">
             <div class="summary-card-title"><span>🇮🇳</span> India Portfolio <span class="market-badge closed" id="indiaMarketBadge">Closed</span></div>
-            <div class="summary-main-value" id="indiaTotalValue">₹–</div>
+            <div class="summary-key-metrics">
+                <div class="summary-key-metric">
+                    <div class="summary-key-label">Invested Amount</div>
+                    <div class="summary-key-value" id="indiaInvestedAmount">₹–</div>
+                </div>
+                <div class="summary-key-metric">
+                    <div class="summary-key-label">Current Value</div>
+                    <div class="summary-key-value" id="indiaTotalValue">₹–</div>
+                </div>
+            </div>
             <div class="summary-card-stats">
                 <div class="sc-stat">
                     <div class="sc-label">Today P/L</div>
@@ -923,6 +1145,26 @@ body {
             <div class="performance-chart"><div class="perf-bars" id="indiaPerfBars"><div class="perf-loading">Loading…</div></div></div>
             <div class="perf-axis-labels"><span id="indiaPerfStart">–</span><span id="indiaPerfMid">–</span><span id="indiaPerfEnd">–</span></div>
             <div class="performance-foot"><span id="indiaPerfStatus">–</span><span class="perf-return" id="indiaPerfReturn">–</span></div>
+        </div>
+
+        <div class="performance-card gold-card">
+            <div class="performance-head">
+                <div class="performance-title">🟡 Gold ETFs · GLDM vs GOLDBEES</div>
+                <div class="performance-tabs">
+                    <button class="perf-tab active gold" data-market="gold" data-range="1D" onclick="setGoldPerformanceRange('1D')">1D</button>
+                    <button class="perf-tab" data-market="gold" data-range="5D" onclick="setGoldPerformanceRange('5D')">5D</button>
+                    <button class="perf-tab" data-market="gold" data-range="1M" onclick="setGoldPerformanceRange('1M')">1M</button>
+                    <button class="perf-tab" data-market="gold" data-range="3M" onclick="setGoldPerformanceRange('3M')">3M</button>
+                </div>
+            </div>
+            <div class="gold-legend">
+                <span class="gold-legend-item"><span class="gold-legend-swatch gldm"></span>GLDM ($)</span>
+                <span class="gold-legend-item"><span class="gold-legend-swatch goldbees"></span>GOLDBEES (₹)</span>
+                <span>Each touching pair = same period · Left axis = GLDM $ · Right axis = GOLDBEES ₹</span>
+            </div>
+            <div class="performance-chart"><div class="perf-bars" id="goldPerfBars"><div class="perf-loading">Loading…</div></div></div>
+            <div class="perf-axis-labels"><span id="goldPerfStart">Start</span><span id="goldPerfMid">Mid</span><span id="goldPerfEnd">Latest</span></div>
+            <div class="performance-foot"><span id="goldPerfStatus">Comparative ETF performance</span><span class="perf-return" id="goldPerfReturn">–</span></div>
         </div>
     </div>
 </div>
@@ -1017,14 +1259,52 @@ const REFRESH_SEC     = 30;
 // Example: https://portfolio-prices.<your-subdomain>.workers.dev/prices
 const PRICE_API_URL = 'https://portfolio-prices.yellow-credit-740e.workers.dev/';
 
-const DEFAULT_US = [
-    { symbol: 'GLDM', units: 1400.657,   purchasePrice: 105.20, note: 'FIDL' },
-    { symbol: 'SIVR', units: 986.557,    purchasePrice: 83.56,  note: 'FIDL' }
-];
-const DEFAULT_INDIA = [];
+const PORTFOLIO_DATA_VERSION = 2;
 
-let usPositions    = JSON.parse(localStorage.getItem('usPositions'))    || DEFAULT_US;
-let indiaPositions = JSON.parse(localStorage.getItem('indiaPositions')) || DEFAULT_INDIA;
+// Current holdings supplied Sep 4, 2026.
+// Fidelity
+//   Rollover IRA: GLDM 1,584.05 shares, cost basis $150,975.71
+//   Roth IRA:     SIVR 654.051 shares, cost basis $49,655.54
+// Robinhood
+//   GLDM 906.342671 shares, cost basis $80,000.00
+// India
+//   GOLDBEES 231,010 units @ ₹126.96 = ₹29,329,030
+const DEFAULT_US = [
+    { symbol: 'GLDM', units: 1584.05,    purchasePrice: 95.31, investedAmount: 150975.71, note: 'FDTY' },
+    { symbol: 'SIVR', units: 654.051,    purchasePrice: 75.92, investedAmount: 49655.54,  note: 'FDTY' },
+    { symbol: 'GLDM', units: 906.342671, purchasePrice: 88.27, investedAmount: 80000.00,  note: 'RBNH' }
+];
+const DEFAULT_INDIA = [
+    { symbol: 'GOLDBEES', units: 231010, purchasePrice: 126.96, investedAmount: 29329030 }
+];
+
+function clonePositions(items) {
+    return JSON.parse(JSON.stringify(items));
+}
+
+const storedPortfolioVersion = Number(localStorage.getItem('portfolioDataVersion') || 0);
+let usPositions;
+let indiaPositions;
+
+if (storedPortfolioVersion < PORTFOLIO_DATA_VERSION) {
+    // One-time migration away from the old/stale position set.
+    usPositions = clonePositions(DEFAULT_US);
+    indiaPositions = clonePositions(DEFAULT_INDIA);
+    localStorage.setItem('usPositions', JSON.stringify(usPositions));
+    localStorage.setItem('indiaPositions', JSON.stringify(indiaPositions));
+    localStorage.setItem('portfolioDataVersion', String(PORTFOLIO_DATA_VERSION));
+} else {
+    const storedUS = JSON.parse(localStorage.getItem('usPositions') || 'null');
+    const storedIndia = JSON.parse(localStorage.getItem('indiaPositions') || 'null');
+
+    usPositions = Array.isArray(storedUS) && storedUS.length
+        ? storedUS
+        : clonePositions(DEFAULT_US);
+
+    indiaPositions = Array.isArray(storedIndia) && storedIndia.length
+        ? storedIndia
+        : clonePositions(DEFAULT_INDIA);
+}
 let lastPrices     = JSON.parse(localStorage.getItem('lastPrices') || '{}');
 let lastPrevCloses = JSON.parse(localStorage.getItem('lastPrevCloses') || '{}');
 
@@ -1066,6 +1346,7 @@ function fireAlert(pos, price, isIndia) {
 function saveLocal() {
     localStorage.setItem('usPositions',    JSON.stringify(usPositions));
     localStorage.setItem('indiaPositions', JSON.stringify(indiaPositions));
+    localStorage.setItem('portfolioDataVersion', String(PORTFOLIO_DATA_VERSION));
 }
 
 // ─────────────────────────────────────────────
@@ -1094,7 +1375,7 @@ async function pushToGist(silent = false) {
         if (!silent) showSyncMsg('Nothing to push — positions are empty.', 'err');
         return false;
     }
-    const payload = { usPositions, indiaPositions, updated: new Date().toISOString() };
+    const payload = { portfolioVersion: PORTFOLIO_DATA_VERSION, usPositions, indiaPositions, updated: new Date().toISOString() };
     try {
         const res = await fetch(`https://api.github.com/gists/${c.gistId}`, {
             method: 'PATCH',
@@ -1134,14 +1415,39 @@ async function pullFromGist(silent = false) {
         if (!raw) throw new Error(`No readable file in gist. Files found: ${fileNames.join(', ')}`);
         const data = JSON.parse(raw);
         if (data.usPositions !== undefined || data.indiaPositions !== undefined) {
-            // Only overwrite if Gist actually has positions — never replace with empty array
-            if (data.usPositions !== undefined && data.usPositions.length > 0)    usPositions    = data.usPositions;
-            if (data.indiaPositions !== undefined && data.indiaPositions.length > 0) indiaPositions = data.indiaPositions;
+            const cloudVersion = Number(data.portfolioVersion || 0);
+
+            if (cloudVersion >= PORTFOLIO_DATA_VERSION) {
+                // Only overwrite with a current-version cloud portfolio.
+                if (Array.isArray(data.usPositions) && data.usPositions.length > 0) {
+                    usPositions = data.usPositions;
+                }
+                if (Array.isArray(data.indiaPositions) && data.indiaPositions.length > 0) {
+                    indiaPositions = data.indiaPositions;
+                }
+                saveLocal();
+                renderPosList();
+                updateAllPortfolios();
+                const ts = data.updated ? new Date(data.updated).toLocaleString() : 'unknown time';
+                if (!silent) showSyncMsg(`✓ Pulled from cloud (${ts}).`, 'ok');
+                return true;
+            }
+
+            // The old Gist contains the superseded position set. Keep the
+            // current verified holdings and migrate the Gist once.
+            usPositions = clonePositions(DEFAULT_US);
+            indiaPositions = clonePositions(DEFAULT_INDIA);
             saveLocal();
             renderPosList();
             updateAllPortfolios();
-            const ts = data.updated ? new Date(data.updated).toLocaleString() : 'unknown time';
-            if (!silent) showSyncMsg(`✓ Pulled from cloud (${ts}).`, 'ok');
+
+            if (c.token) {
+                await pushToGist(true);
+            }
+
+            if (!silent) {
+                showSyncMsg('✓ Old cloud portfolio migrated to current holdings.', 'ok');
+            }
             return true;
         }
         const keys = Object.keys(data).join(', ') || '(empty)';
@@ -1569,6 +1875,66 @@ function quoteDisplayMeta(symbol, isIndia) {
     return { freshness, freshClass: '', source: q.source || '—' };
 }
 
+
+function usAccountForPosition(pos) {
+    const note = String(pos.note || '').toUpperCase();
+    const symbol = String(pos.symbol || '').toUpperCase();
+
+    // Current portfolio mapping:
+    // Fidelity Rollover IRA = GLDM tagged FDTY
+    // Fidelity Roth IRA     = SIVR tagged FDTY
+    // Other current US lots = Robinhood
+    if (note === 'FDTY' && symbol === 'GLDM') return 'Fidelity · Rollover IRA';
+    if (note === 'FDTY' && symbol === 'SIVR') return 'Fidelity · Roth IRA';
+    return 'Robinhood';
+}
+
+function prepareUSDisplayGroups(positions) {
+    const groups = new Map();
+
+    for (const raw of positions) {
+        const account = usAccountForPosition(raw);
+        if (!groups.has(account)) groups.set(account, []);
+
+        // Aggregate identical symbols inside the same account.
+        const list = groups.get(account);
+        let pos = list.find(x => x.symbol === raw.symbol);
+
+        const rawInvested = raw.investedAmount > 0
+            ? Number(raw.investedAmount)
+            : Number(raw.units) * Number(raw.purchasePrice);
+
+        if (!pos) {
+            pos = {
+                ...raw,
+                account,
+                units: Number(raw.units),
+                investedAmount: rawInvested,
+                purchasePrice: Number(raw.purchasePrice)
+            };
+            list.push(pos);
+        } else {
+            const newUnits = Number(pos.units) + Number(raw.units);
+            const newInvested = Number(pos.investedAmount || 0) + rawInvested;
+            pos.units = newUnits;
+            pos.investedAmount = newInvested;
+            pos.purchasePrice = newUnits > 0 ? newInvested / newUnits : 0;
+
+            // Aggregated Robinhood row should not show individual lot tags.
+            if (account === 'Robinhood') pos.note = '';
+        }
+    }
+
+    return [...groups.entries()].map(([account, positions]) => ({
+        account,
+        positions
+    }));
+}
+
+function countUSDisplayPositions(groups) {
+    return groups.reduce((n, g) => n + g.positions.length, 0);
+}
+
 function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {}) {
     const fmt = isIndia ? fINR : fUSD;
     const symCls = isIndia ? 'india' : 'us';
@@ -1610,7 +1976,10 @@ function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {})
         const tvSym = isIndia ? `NSE:${pos.symbol}` : pos.symbol;
         const tvUrl = `https://www.tradingview.com/chart/?symbol=${tvSym}`;
 
-        const symHtml = `<a href="${tvUrl}" target="_blank" style="text-decoration:none"><span class="sym ${symCls}">${pos.symbol}</span></a>${pos.note ? `<span class="note-tag">${pos.note}</span>` : ''}${alertIcon}`;
+        const accountHtml = !isIndia && pos.account
+            ? `<div class="account-tag">${pos.account}</div>`
+            : '';
+        const symHtml = `<a href="${tvUrl}" target="_blank" style="text-decoration:none"><span class="sym ${symCls}">${pos.symbol}</span></a>${pos.note ? `<span class="note-tag">${pos.note}</span>` : ''}${alertIcon}${accountHtml}`;
 
         desktopRows += `<tr>
             <td>${symHtml}</td>
@@ -1646,22 +2015,33 @@ function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {})
 function updateSummary(prefix, fmt, totalValue, totalCost, totalTodayPnL) {
     const pnl = totalValue - totalCost;
     const ret = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
-    const todayPct = totalCost > 0 ? (totalTodayPnL / totalCost) * 100 : 0;
-    const valEl   = document.getElementById(`${prefix}TotalValue`);
-    const pnlEl   = document.getElementById(`${prefix}TotalPnL`);
-    const retEl   = document.getElementById(`${prefix}TotalReturn`);
-    const todayEl = document.getElementById(`${prefix}TodayPnL`);
-    if (valEl)   valEl.textContent  = fmt(totalValue);
-    if (pnlEl) { pnlEl.textContent  = (pnl>=0?'+':'') + fmt(pnl);  pnlEl.className  = 'sc-value ' + (pnl >= 0 ? 'green' : 'red'); }
-    if (retEl) { retEl.textContent  = fPct(ret);                    retEl.className  = 'sc-value ' + (ret >= 0 ? 'green' : 'red'); }
-    if (todayEl){ todayEl.textContent = (totalTodayPnL>=0?'+':'') + fmt(totalTodayPnL); todayEl.className = 'sc-value ' + (totalTodayPnL >= 0 ? 'green' : 'red'); }
+    const investedEl = document.getElementById(`${prefix}InvestedAmount`);
+    const valEl      = document.getElementById(`${prefix}TotalValue`);
+    const pnlEl      = document.getElementById(`${prefix}TotalPnL`);
+    const retEl      = document.getElementById(`${prefix}TotalReturn`);
+    const todayEl    = document.getElementById(`${prefix}TodayPnL`);
+
+    if (investedEl) investedEl.textContent = fmt(totalCost);
+    if (valEl)      valEl.textContent = fmt(totalValue);
+    if (pnlEl) {
+        pnlEl.textContent = (pnl >= 0 ? '+' : '') + fmt(pnl);
+        pnlEl.className = 'sc-value ' + (pnl >= 0 ? 'green' : 'red');
+    }
+    if (retEl) {
+        retEl.textContent = fPct(ret);
+        retEl.className = 'sc-value ' + (ret >= 0 ? 'green' : 'red');
+    }
+    if (todayEl) {
+        todayEl.textContent = (totalTodayPnL >= 0 ? '+' : '') + fmt(totalTodayPnL);
+        todayEl.className = 'sc-value ' + (totalTodayPnL >= 0 ? 'green' : 'red');
+    }
 }
 
 
 // ─────────────────────────────────────────────
 //  PERFORMANCE BAR CHARTS
 // ─────────────────────────────────────────────
-const performanceRange = { us: '1D', india: '1D' };
+const performanceRange = { us: '1D', india: '1D', gold: '1D' };
 const performanceHistoryCache = new Map();
 
 function workerBaseUrl() {
@@ -1721,6 +2101,35 @@ function perfLabel(ts, range, market) {
     return d.toLocaleDateString('en-US', { timeZone:zone, month:'short', day:'numeric' });
 }
 
+function perfAxisValue(value, market) {
+    if (!Number.isFinite(value)) return '—';
+
+    if (market === 'us') {
+        if (Math.abs(value) >= 1e6) return '$' + (value / 1e6).toFixed(2) + 'M';
+        if (Math.abs(value) >= 1e3) return '$' + Math.round(value / 1e3) + 'K';
+        return '$' + Math.round(value).toLocaleString('en-US');
+    }
+
+    const av = Math.abs(value);
+    if (av >= 1e7) return '₹' + (value / 1e7).toFixed(2) + 'Cr';
+    if (av >= 1e5) return '₹' + (value / 1e5).toFixed(1) + 'L';
+    if (av >= 1e3) return '₹' + Math.round(value / 1e3) + 'K';
+    return '₹' + Math.round(value).toLocaleString('en-IN');
+}
+
+function nicePerfStep(rawStep) {
+    if (!Number.isFinite(rawStep) || rawStep <= 0) return 1;
+    const exp = Math.floor(Math.log10(rawStep));
+    const f = rawStep / Math.pow(10, exp);
+    let nice;
+    if (f <= 1) nice = 1;
+    else if (f <= 2) nice = 2;
+    else if (f <= 2.5) nice = 2.5;
+    else if (f <= 5) nice = 5;
+    else nice = 10;
+    return nice * Math.pow(10, exp);
+}
+
 function renderPerformanceBars(market, range, series) {
     const barsEl = document.getElementById(`${market}PerfBars`);
     const retEl = document.getElementById(`${market}PerfReturn`);
@@ -1734,19 +2143,67 @@ function renderPerformanceBars(market, range, series) {
         return;
     }
 
-    const firstValue = series[0].value;
-    const plotted = series.map(p => ({
-        ...p,
-        pct: firstValue > 0 ? ((p.value - firstValue) / firstValue) * 100 : 0
-    }));
+    const firstValue = Number(series[0].value);
+    const plotted = series
+        .map(p => ({
+            ...p,
+            value: Number(p.value),
+            pct: firstValue > 0 ? ((Number(p.value) - firstValue) / firstValue) * 100 : 0
+        }))
+        .filter(p => Number.isFinite(p.value) && p.value > 0);
 
-    const maxAbs = Math.max(0.15, ...plotted.map(p => Math.abs(p.pct)));
-    barsEl.innerHTML = plotted.map(p => {
-        const height = Math.max(2, Math.min(48, (Math.abs(p.pct) / maxAbs) * 47));
-        const cls = p.pct >= 0 ? `positive ${market}` : 'negative';
-        const title = `${perfLabel(p.ts, range, market)} · ${p.pct >= 0 ? '+' : ''}${p.pct.toFixed(2)}%`;
-        return `<div class="perf-slot" title="${title}"><div class="perf-bar ${cls}" style="height:${height}%"></div></div>`;
+    if (plotted.length < 2) {
+        barsEl.innerHTML = '<div class="perf-loading">Performance data unavailable</div>';
+        retEl.textContent = '—';
+        statusEl.textContent = 'No history';
+        return;
+    }
+
+    const values = plotted.map(p => p.value);
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+
+    // Dynamic Y-axis with rounded values and visible horizontal grid lines.
+    const rawRange = Math.max(dataMax - dataMin, Math.abs(dataMax) * 0.0025, 1);
+    const step = nicePerfStep(rawRange / 4);
+    let axisMin = Math.floor((dataMin - step * 0.35) / step) * step;
+    let axisMax = Math.ceil((dataMax + step * 0.35) / step) * step;
+    if (axisMax <= axisMin) axisMax = axisMin + step * 4;
+
+    const axisSpan = axisMax - axisMin;
+    const tickCount = Math.max(2, Math.round(axisSpan / step));
+    const ticks = [];
+    for (let i = 0; i <= tickCount; i++) {
+        const value = axisMin + (axisSpan * i / tickCount);
+        ticks.push(value);
+    }
+
+    const gridHtml = ticks.map(v => {
+        const bottomPct = ((v - axisMin) / axisSpan) * 100;
+        return `
+            <div class="perf-grid-line" style="bottom:${bottomPct}%"></div>
+            <div class="perf-y-label" style="bottom:${bottomPct}%;transform:translateY(50%)">${perfAxisValue(v, market)}</div>
+        `;
     }).join('');
+
+    const firstBottom = ((firstValue - axisMin) / axisSpan) * 100;
+    const firstLineHtml = firstBottom >= 0 && firstBottom <= 100
+        ? `<div class="perf-start-line" style="bottom:${firstBottom}%"></div>
+           <div class="perf-start-label" style="bottom:${firstBottom}%">Start ${perfAxisValue(firstValue, market)}</div>`
+        : '';
+
+    const barHtml = plotted.map(p => {
+        const height = Math.max(1.5, Math.min(100, ((p.value - axisMin) / axisSpan) * 100));
+        const below = p.value < firstValue ? ' below-start' : '';
+        const title = `${perfLabel(p.ts, range, market)} · ${perfAxisValue(p.value, market)} · ${p.pct >= 0 ? '+' : ''}${p.pct.toFixed(2)}%`;
+        return `<div class="perf-slot" title="${title}"><div class="perf-bar ${market}${below}" style="height:${height}%"></div></div>`;
+    }).join('');
+
+    barsEl.innerHTML = `
+        ${gridHtml}
+        ${firstLineHtml}
+        <div class="perf-bar-area">${barHtml}</div>
+    `;
 
     const mid = plotted[Math.floor((plotted.length - 1) / 2)];
     document.getElementById(`${market}PerfStart`).textContent = perfLabel(plotted[0].ts, range, market);
@@ -1758,7 +2215,9 @@ function renderPerformanceBars(market, range, series) {
     retEl.className = 'perf-return ' + (latest >= 0 ? 'green' : 'red');
 
     const status = market === 'us' ? usMarketStatus() : indiaMarketStatus();
-    statusEl.textContent = status === 'open' ? 'Market open' : (status === 'extended' ? 'Extended hours' : 'Market closed');
+    statusEl.textContent = status === 'open'
+        ? 'Market open'
+        : (status === 'extended' ? 'Extended hours' : 'Market closed');
 }
 
 async function loadPerformance(market, range = performanceRange[market], force = false) {
@@ -1781,7 +2240,7 @@ async function loadPerformance(market, range = performanceRange[market], force =
         }));
 
         const anchor = histories[uniqueSymbols[0]];
-        let timeline = sampleSeries(anchor, 18).map(p => p.ts);
+        let timeline = sampleSeries(anchor, 20).map(p => p.ts);
         let series = timeline.map(ts => {
             let value = 0;
             for (const pos of positions) {
@@ -1826,6 +2285,180 @@ function setPerformanceRange(market, range) {
     loadPerformance(market, range, true);
 }
 
+function goldNiceStep(rawStep) {
+    if (!Number.isFinite(rawStep) || rawStep <= 0) return 1;
+    const exp = Math.floor(Math.log10(rawStep));
+    const f = rawStep / Math.pow(10, exp);
+    let nice;
+    if (f <= 1) nice = 1;
+    else if (f <= 2) nice = 2;
+    else if (f <= 2.5) nice = 2.5;
+    else if (f <= 5) nice = 5;
+    else nice = 10;
+    return nice * Math.pow(10, exp);
+}
+
+function axisBounds(values, preferredTicks = 4) {
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const rawRange = Math.max(max - min, Math.abs(max) * 0.0025, 0.01);
+    const step = goldNiceStep(rawRange / preferredTicks);
+    let axisMin = Math.floor((min - step * 0.35) / step) * step;
+    let axisMax = Math.ceil((max + step * 0.35) / step) * step;
+    if (axisMax <= axisMin) axisMax = axisMin + step * preferredTicks;
+    return { min: axisMin, max: axisMax };
+}
+
+function renderGoldBars(range, gldmPoints, goldbeesPoints) {
+    const barsEl = document.getElementById('goldPerfBars');
+    const retEl = document.getElementById('goldPerfReturn');
+    const statusEl = document.getElementById('goldPerfStatus');
+    if (!barsEl || !retEl || !statusEl) return;
+
+    if (!gldmPoints || !goldbeesPoints || gldmPoints.length < 2 || goldbeesPoints.length < 2) {
+        barsEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
+        retEl.textContent = '—';
+        statusEl.textContent = 'History unavailable';
+        return;
+    }
+
+    // Pair the two series by relative progress through the selected period.
+    // This keeps a side-by-side visual even though US and India market hours differ.
+    const pairCount = Math.min(20, gldmPoints.length, goldbeesPoints.length);
+
+    const g = sampleSeries(gldmPoints, pairCount)
+        .map(p => ({ ts:Number(p.ts), price:Number(p.price) }))
+        .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0);
+
+    const i = sampleSeries(goldbeesPoints, pairCount)
+        .map(p => ({ ts:Number(p.ts), price:Number(p.price) }))
+        .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0);
+
+    const n = Math.min(g.length, i.length);
+
+    if (n < 2) {
+        barsEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
+        retEl.textContent = '—';
+        return;
+    }
+
+    const gSeries = g.slice(0, n);
+    const iSeries = i.slice(0, n);
+
+    // Force the final pair to the live Worker prices when available.
+    const liveGLDM = Number(lastPrices.GLDM);
+    const liveGB = Number(lastPrices.GOLDBEES);
+
+    if (Number.isFinite(liveGLDM) && liveGLDM > 0) {
+        gSeries[n - 1] = { ts:Math.floor(Date.now()/1000), price:liveGLDM };
+    }
+    if (Number.isFinite(liveGB) && liveGB > 0) {
+        iSeries[n - 1] = { ts:Math.floor(Date.now()/1000), price:liveGB };
+    }
+
+    const gBounds = axisBounds(gSeries.map(p => p.price), 4);
+    const iBounds = axisBounds(iSeries.map(p => p.price), 4);
+
+    const gSpan = gBounds.max - gBounds.min;
+    const iSpan = iBounds.max - iBounds.min;
+
+    // Shared horizontal grid positions; each side gets its own exact price label.
+    const tickCount = 4;
+    const gridHtml = [];
+
+    for (let t = 0; t <= tickCount; t++) {
+        const frac = t / tickCount;
+        const bottomPct = frac * 100;
+        const gTick = gBounds.min + gSpan * frac;
+        const iTick = iBounds.min + iSpan * frac;
+
+        gridHtml.push(`
+            <div class="gold-grid-line" style="bottom:${bottomPct}%"></div>
+            <div class="gold-y-label-left" style="bottom:${bottomPct}%">$${gTick.toFixed(2)}</div>
+            <div class="gold-y-label-right" style="bottom:${bottomPct}%">₹${iTick.toFixed(2)}</div>
+        `);
+    }
+
+    const barsHtml = gSeries.map((gp, idx) => {
+        const ip = iSeries[idx];
+
+        const gHeight = Math.max(1.5, Math.min(100, ((gp.price - gBounds.min) / gSpan) * 100));
+        const iHeight = Math.max(1.5, Math.min(100, ((ip.price - iBounds.min) / iSpan) * 100));
+
+        const title =
+            `Period ${idx + 1} | ` +
+            `GLDM $${gp.price.toFixed(2)} | ` +
+            `GOLDBEES ₹${ip.price.toFixed(2)}`;
+
+        return `
+            <div class="gold-pair-slot" title="${title}">
+                <div class="gold-pair-bar gldm" style="height:${gHeight}%"></div>
+                <div class="gold-pair-bar goldbees" style="height:${iHeight}%"></div>
+            </div>
+        `;
+    }).join('');
+
+    barsEl.innerHTML = `
+        <div class="gold-axis-title-left">GLDM $</div>
+        <div class="gold-axis-title-right">GOLDBEES ₹</div>
+        ${gridHtml.join('')}
+        <div class="gold-pair-area">${barsHtml}</div>
+    `;
+
+    document.getElementById('goldPerfStart').textContent = 'Start';
+    document.getElementById('goldPerfMid').textContent = 'Mid';
+    document.getElementById('goldPerfEnd').textContent = 'Latest';
+
+    const gLatest = gSeries[gSeries.length - 1];
+    const iLatest = iSeries[iSeries.length - 1];
+
+    retEl.innerHTML =
+        `<span style="color:#b8870b">GLDM $${gLatest.price.toFixed(2)}</span>` +
+        ` &nbsp;·&nbsp; ` +
+        `<span style="color:#e66a00">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>`;
+
+    retEl.className = 'perf-return';
+
+    statusEl.textContent =
+        `Exact ETF prices · ${range}`;
+}
+
+async function loadGoldPerformance(range = performanceRange.gold, force = false) {
+    const barsEl = document.getElementById('goldPerfBars');
+    if (!barsEl) return;
+
+    try {
+        if (force) {
+            barsEl.innerHTML = '<div class="perf-loading">Loading…</div>';
+        }
+
+        const [gldmPoints, goldbeesPoints] = await Promise.all([
+            getPerformanceHistory('GLDM', range, force),
+            getPerformanceHistory('GOLDBEES', range, force)
+        ]);
+
+        renderGoldBars(range, gldmPoints, goldbeesPoints);
+    } catch (e) {
+        console.warn('Gold comparison failed', e);
+        barsEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
+        document.getElementById('goldPerfReturn').textContent = '—';
+        document.getElementById('goldPerfStatus').textContent = 'History unavailable';
+    }
+}
+
+function setGoldPerformanceRange(range) {
+    performanceRange.gold = range;
+
+    document.querySelectorAll('.perf-tab[data-market="gold"]').forEach(btn => {
+        const active = btn.dataset.range === range;
+        btn.classList.toggle('active', active);
+        btn.classList.toggle('gold', active);
+    });
+
+    loadGoldPerformance(range, true);
+}
+
+
 const INDIA_WRITEOFFS = 44865; // BINNY: 119 units @ ₹377.02 — delisted, value = ₹0, silently deducted
 
 async function updateAllPortfolios() {
@@ -1868,11 +2501,40 @@ async function updateAllPortfolios() {
         await Promise.all(uniqueUS.map(async sym => {
             sparklines1[sym] = await fetchSparkline(sym, false);
         }));
-        const { html: usHtml, totalCost: usCost, totalValue: usVal, totalTodayPnL: usTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false, sparklines1);
+        const usGroups = prepareUSDisplayGroups(usPositions);
+
+        let usHtml = '';
+        let usCost = 0, usVal = 0, usTodayPnL = 0;
+
+        for (const group of usGroups) {
+            const result = buildTableHTML(group.positions, prices, prevCloses, false, sparklines1);
+            usCost += result.totalCost;
+            usVal += result.totalValue;
+            usTodayPnL += result.totalTodayPnL;
+
+            const groupInvested = result.totalCost;
+            const groupCurrent = result.totalValue;
+            usHtml += `
+                <div class="broker-group">
+                    <div class="broker-head">
+                        <div class="broker-name">${group.account}</div>
+                        <div class="broker-meta">Invested ${fUSD(groupInvested)} · Current ${fUSD(groupCurrent)}</div>
+                    </div>
+                    ${result.html}
+                </div>`;
+        }
+
         updateSummary('us', fUSD, usVal, usCost, usTodayPnL);
         document.getElementById('usTable').innerHTML = usHtml;
+
+        const displayCount = countUSDisplayPositions(usGroups);
+        const brokerCount = new Set(usGroups.map(g =>
+            g.account.startsWith('Fidelity') ? 'Fidelity' : g.account
+        )).size;
         const usCountEl = document.getElementById('usHoldingsCount');
-        if (usCountEl) usCountEl.textContent = `${usPositions.length} position${usPositions.length === 1 ? '' : 's'}`;
+        if (usCountEl) {
+            usCountEl.textContent = `${displayCount} positions · ${brokerCount} brokers`;
+        }
     } else {
         document.getElementById('usTable').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No US positions — add some in Settings.</div>';
         const usCountEl = document.getElementById('usHoldingsCount'); if (usCountEl) usCountEl.textContent = '0 positions';
@@ -1941,6 +2603,7 @@ async function updateAllPortfolios() {
     // the latest bar is always replaced with the current live portfolio value.
     loadPerformance('us', performanceRange.us, false);
     loadPerformance('india', performanceRange.india, false);
+    loadGoldPerformance(performanceRange.gold, false);
 
     updateTabTitle();
 }
