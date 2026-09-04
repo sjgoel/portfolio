@@ -242,6 +242,7 @@
     .gold-y-label-left, .gold-y-label-right { width:46px; font-size:8px; }
     .gold-grid-line { left:50px; right:50px; }
     .gold-line-svg { left:50px; width:calc(100% - 100px); }
+    .gold-v-grid-line { display:none; }
     .gold-legend { margin-left:50px; margin-right:50px; }
             .top-summary {
                 grid-template-columns: 1fr;
@@ -799,6 +800,14 @@ body {
     z-index:1;
     pointer-events:none;
 }
+.gold-v-grid-line {
+    position:absolute;
+    top:0;
+    bottom:0;
+    border-left:1px solid #eef1f4;
+    z-index:1;
+    pointer-events:none;
+}
 .gold-y-label-left,
 .gold-y-label-right {
     position:absolute;
@@ -892,7 +901,7 @@ body {
     transition:height .2s ease;
 }
 .perf-bar.us { background:#2563eb; }
-.perf-bar.india { background:#ffed29; }
+.perf-bar.india { background:#2563eb; }
 .perf-bar.below-start { background:#dc2626; }
 .perf-start-line {
     position:absolute;
@@ -2413,6 +2422,15 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
         `);
     }
 
+    const vGridHtml = [];
+    const vGridCount = 5;
+    for (let t = 0; t <= vGridCount; t++) {
+        const leftPct = (t / vGridCount) * 100;
+        vGridHtml.push(
+            `<div class="gold-v-grid-line" style="left:calc(48px + (100% - 96px) * ${leftPct / 100})"></div>`
+        );
+    }
+
     const toPoints = (series, bounds) => {
         const span = bounds.max - bounds.min;
         return series.map((p, idx) => {
@@ -2429,6 +2447,7 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
         <div class="gold-axis-title-left">GLDM $</div>
         <div class="gold-axis-title-right">GOLDBEES ₹</div>
         ${gridHtml.join('')}
+        ${vGridHtml.join('')}
         <svg class="gold-line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="GLDM and GOLDBEES price lines">
             <polyline points="${gPoints}" fill="none" stroke="#2563eb" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
             <polyline points="${iPoints}" fill="none" stroke="#b45309" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
