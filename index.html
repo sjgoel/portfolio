@@ -233,530 +233,11 @@
     .perf-axis-labels { margin-left:49px; }
     .gold-y-label-left, .gold-y-label-right { width:46px; font-size:8px; }
     .gold-grid-line { left:50px; right:50px; }
-    .gold-pair-area { left:50px; right:50px; gap:6px; }
-    .gold-legend { margin-left:50px; margin-right:50px; }
-            .top-summary {
-                grid-template-columns: 1fr;
-            }
-            .summary-card-stats {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px 0;
-            }
-            .sc-divider { display: none; }
-            .sc-stat { text-align: left; padding: 4px 8px; }
-            .sc-stat:nth-child(2n) { text-align: right; }
-            .sc-value { font-size: 13px; }
-        }
-
-
-
-        .region-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px 10px 0 0;
-            border-bottom: none;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-        }
-        .region-header.india { border-top: 3px solid var(--india); background: #fff7ed; }
-        .region-header.us    { border-top: 3px solid var(--us);    background: #eff6ff; }
-
-        .region-flag { font-size: 16px; }
-
-        .region-name {
-            font-family: var(--mono);
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-        .region-name.us    { color: #fff; background: var(--us);    padding: 3px 10px; border-radius: 4px; }
-        .region-name.india { color: #fff; background: var(--india); padding: 3px 10px; border-radius: 4px; }
-
-        .region-stats {
-            margin-left: auto;
-            display: flex;
-            gap: 20px;
-        }
-
-        .stat { text-align: right; }
-        .stat-label { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1px; }
-        .stat-value { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
-        .stat-value.green { color: var(--green); }
-        .stat-value.red   { color: var(--red); }
-
-        .market-badge {
-            font-family: var(--mono);
-            font-size: 9px;
-            padding: 2px 7px;
-            border-radius: 10px;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .market-badge.open   { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-        .market-badge.open::before {
-            content: '';
-            display: inline-block;
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: #16a34a;
-            animation: liveblink 1.2s ease-in-out infinite;
-        }
-        @keyframes liveblink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
-        .market-badge.closed   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
-        .market-badge.extended { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
-        .market-time { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-left: 6px; white-space: nowrap; }
-
-        .table-wrap {
-            background: var(--surface);
-            border: none;
-            border-radius: 0;
-            overflow-x: auto;
-        }
-        .region-header.us    + .table-wrap { background: #eff6ff; }
-        .region-header.india + .table-wrap { background: #fff7ed; }
-        .region-header {
-            border: none;
-            border-radius: 0;
-            box-shadow: none;
-        }
-
-        table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; table-layout:fixed; }
-
-        /* Fixed column widths - same for both US and India tables */
-        table th:nth-child(1), table td:nth-child(1) { width: 13%; text-align: left; } /* Symbol */
-        table th:nth-child(2), table td:nth-child(2) { width: 10%; text-align: left; } /* LTP */
-        table th:nth-child(3), table td:nth-child(3) { width: 10%; text-align: center; } /* Units */
-        table th:nth-child(4), table td:nth-child(4) { width: 9%; text-align: center; } /* Avg */
-        table th:nth-child(5), table td:nth-child(5) { width: 13%; text-align: center; } /* Invested */
-        table th:nth-child(6), table td:nth-child(6) { width: 13%; text-align: center; } /* Value */
-        table th:nth-child(7), table td:nth-child(7) { width: 12%; text-align: center; } /* Total P/L */
-        table th:nth-child(8), table td:nth-child(8) { width: 12%; text-align: center; } /* Today P/L */
-        table th:nth-child(9), table td:nth-child(9) { width: 8%; text-align: center; }  /* 5D */
-
-        thead tr { border-bottom: 1px solid var(--border); }
-        .region-header.us    + .table-wrap thead tr { background: #dbeafe; border-top: 2px solid #111827; border-bottom: 2px solid #111827; }
-        .region-header.india + .table-wrap thead tr { background: #fed7aa; border-top: 2px solid #111827; border-bottom: 2px solid #111827; }
-        th { padding: 7px 8px; font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-right: 1px solid #f0f0f0; }
-        th:first-child { padding-left: 12px; }
-        th:last-child { border-right: none; padding-right: 12px; }
-
-        tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.1s; }
-        tbody tr:last-child { border-bottom: none; }
-        tbody tr:hover { background: #fafafa; }
-
-        td { padding: 7px 8px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; border-right: 1px solid #f3f4f6; }
-        td:first-child { padding-left: 12px; }
-        td:last-child { border-right: none; padding-right: 12px; }
-
-        .sym { font-weight: 700; font-size: 13px; }
-        .sym.us    { color: var(--us); }
-        .sym.india { color: var(--india); }
-        .sym:hover { text-decoration: underline; }
-
-        .price-cell { font-size:13px; font-weight:700; color: #00c853; }
-        .units-cell { color: var(--muted); font-size: 10px; }
-        .avg-cell   { color: var(--muted); }
-        .cost-cell  { color: var(--muted); }
-        .value-cell { color: var(--text); font-weight: 600; }
-
-        .chg-pos { color: var(--green); }
-        .chg-neg { color: var(--red); }
-
-        .pl-main { font-weight: 700; font-size: 12px; }
-        .pl-pct  { font-size: 9px; margin-top: 1px; }
-        td .pl-wrapper { display: inline-block; border-radius: 4px; padding: 3px 7px; }
-        td .pl-wrapper.chg-pos { background: #15803d; color: #fff; }
-        td .pl-wrapper.chg-neg { background: #dc2626; color: #fff; }
-        td .pl-wrapper .pl-main { color: inherit; }
-        td .pl-wrapper .pl-pct  { color: inherit; opacity: 0.85; }
-
-        /* Today P/L — normal weight, smaller to distinguish from Total P/L */
-        .today-main { font-weight: 400; font-size: 11px; }
-        .today-pct  { font-size: 9px; margin-top: 1px; }
-
-        /* Row separators between positions */
-        tbody tr.row-main + tr.row-main td,
-        tbody tr.row-mobile + tr.row-main td { border-top: 2px solid #e5e7eb; }
-        tbody tr.row-mobile td { border-top: none; }
-
-        /* Today P/L — lighter weight, smaller, to distinguish from Total P/L */
-        .today-main { font-weight: 400; font-size: 11px; color: var(--muted); }
-        .today-main.chg-pos { color: var(--green); font-weight: 500; }
-        .today-main.chg-neg { color: var(--red);   font-weight: 500; }
-        .today-pct  { font-size: 9px; margin-top: 1px; opacity: 0.75; }
-
-        /* Row separator between positions */
-        tbody tr.row-main { border-bottom: none; }
-        tbody tr.row-mobile { border-bottom: 2px solid #e5e7eb; }
-        tbody tr.row-main + tr.row-main { border-top: 2px solid #e5e7eb; }
-
-        /* skeleton loader */
-        .skeleton-row td { padding: 10px 10px; }
-        .skel {
-            display: inline-block;
-            height: 10px;
-            border-radius: 4px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-        /* ─── MODAL ───────────────────────────── */
-        .modal-overlay {
-            display: none;
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 100;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
-
-        .modal {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 22px;
-            max-width: 620px;
-            width: 100%;
-            margin: 20px auto;
-        }
-
-        .modal-hdr {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 18px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .modal-title { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--text); }
-
-        .close-btn {
-            background: none; border: none; color: var(--muted);
-            font-size: 22px; cursor: pointer; line-height: 1;
-            width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-            border-radius: 6px; transition: background 0.15s;
-        }
-        .close-btn:hover { background: var(--surface2); color: var(--text); }
-
-        .section-hdr {
-            font-family: var(--mono); font-size: 11px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.1em;
-            margin: 20px 0 10px 0; padding-bottom: 6px;
-            border-bottom: 1px solid var(--border);
-        }
-        .section-hdr.us    { color: var(--us); border-color: rgba(59,130,246,0.3); }
-        .section-hdr.india { color: var(--india); border-color: rgba(249,115,22,0.3); }
-        .section-hdr.sync  { color: #a78bfa; border-color: rgba(167,139,250,0.3); }
-
-        .pos-form {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 1.5fr auto;
-            gap: 8px;
-            margin-bottom: 10px;
-            align-items: end;
-        }
-
-        .fg { display: flex; flex-direction: column; gap: 4px; }
-        .fg label { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-
-        input[type="text"], input[type="number"], input[type="password"] {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 7px 10px;
-            border-radius: 6px;
-            font-family: var(--mono);
-            font-size: 12px;
-            width: 100%;
-            transition: border-color 0.15s;
-        }
-        input:focus { outline: none; border-color: var(--us); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
-
-        .add-btn {
-            font-family: var(--mono); font-size: 11px; font-weight: 600;
-            background: rgba(34,197,94,0.15);
-            border: 1px solid rgba(34,197,94,0.3);
-            color: var(--green);
-            padding: 7px 14px; border-radius: 6px; cursor: pointer;
-            white-space: nowrap; transition: background 0.15s;
-        }
-        .add-btn:hover { background: rgba(34,197,94,0.25); }
-
-        .pos-list { display: flex; flex-direction: column; gap: 6px; }
-
-        .pos-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px; padding: 8px 12px;
-        }
-
-        .pos-sym { font-family: var(--mono); font-size: 12px; font-weight: 700; }
-        .pos-sym.us    { color: var(--us); }
-        .pos-sym.india { color: var(--india); }
-        .pos-detail { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
-
-        .del-btn {
-            font-size: 10px; font-family: var(--mono);
-            background: rgba(239,68,68,0.1);
-            border: 1px solid rgba(239,68,68,0.2);
-            color: var(--red); padding: 4px 10px; border-radius: 4px; cursor: pointer;
-        }
-        .del-btn:hover { background: rgba(239,68,68,0.2); }
-
-        .edit-btn {
-            font-size: 10px; font-family: var(--mono);
-            background: rgba(59,130,246,0.1);
-            border: 1px solid rgba(59,130,246,0.2);
-            color: #93c5fd; padding: 4px 10px; border-radius: 4px; cursor: pointer;
-        }
-        .edit-btn:hover { background: rgba(59,130,246,0.2); }
-
-        .edit-panel {
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 6px;
-            display: none;
-        }
-        .edit-panel.open { display: block; }
-        .edit-panel-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 8px;
-            align-items: end;
-        }
-        .save-btn {
-            font-size: 10px; font-family: var(--mono);
-            background: rgba(34,197,94,0.15);
-            border: 1px solid rgba(34,197,94,0.3);
-            color: var(--green); padding: 4px 10px; border-radius: 4px; cursor: pointer;
-            white-space: nowrap;
-        }
-        .save-btn:hover { background: rgba(34,197,94,0.25); }
-        .note-tag {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: #4b5563;
-            background: #d1d5db;
-            border: 1px solid #c4c9d1;
-            border-radius: 4px;
-            padding: 1px 5px;
-            margin-left: 4px;
-            letter-spacing: 0.06em;
-        }
-
-        .sync-info {
-            font-family: var(--mono); font-size: 10px; color: var(--muted);
-            background: var(--bg); border: 1px solid var(--border);
-            border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; line-height: 1.6;
-        }
-        .sync-info a { color: #93c5fd; }
-
-        .sync-form { display: flex; flex-direction: column; gap: 10px; }
-
-        .token-row { display: flex; gap: 8px; align-items: end; }
-        .token-row .fg { flex: 1; }
-
-        .btn-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-
-        .sync-status-text {
-            font-family: var(--mono); font-size: 10px;
-            padding: 6px 10px; border-radius: 6px; margin-top: 8px;
-        }
-        .sync-status-text.ok   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-        .sync-status-text.err  { background: #fef2f2; color: var(--red); border: 1px solid #fca5a5; }
-        .sync-status-text.info { background: #eff6ff; color: var(--us);  border: 1px solid #bfdbfe; }
-
-        .no-pos { font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 8px 0; }
-
-        @keyframes alertFlash {
-            0%,100% { background: transparent; }
-            25%,75% { background: rgba(217,119,6,0.18); }
-            50%      { background: rgba(217,119,6,0.32); }
-        }
-        tr.alert-flash td { animation: alertFlash 1.5s ease-in-out 3; }
-
-        /* Desktop: hide mobile rows */
-        .row-mobile { display: none; }
-        .col-desktop { display: table-cell; }
-
-        @media (max-width: 600px) {
-            body { padding: 8px; }
-
-            /* On mobile: hide desktop-only columns, show 2nd row */
-            .col-desktop { display: none !important; }
-            .row-mobile { display: table-row; }
-
-            /* Mobile: Symbol, LTP, Value, Today P/L */
-            table th:nth-child(1), table td:nth-child(1) { width: 24%; }
-            table th:nth-child(2), table td:nth-child(2) { width: 22%; }
-            table th:nth-child(6), table td:nth-child(6) { width: 28%; }
-            table th:nth-child(8), table td:nth-child(8) { width: 26%; }
-
-            th, td { padding: 6px 5px; font-size: 10px; }
-            th:first-child, td:first-child { padding-left: 8px; }
-            td:last-child, th:last-child { padding-right: 8px; }
-        }
-    
-
-/* ================================================================
-   FINAL DASHBOARD GUI
-   Keeps all portfolio / Gist / Worker logic intact.
-   ================================================================ */
-body {
-    background: #f3f5f7;
-    color: #172033;
-    padding: 16px;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 14px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 14px 18px;
-    margin-bottom: 15px;
-    box-shadow: 0 3px 14px rgba(0,0,0,.05);
-}
-.header-title { color:#172033; font-size:18px; font-weight:800; letter-spacing:.08em; }
-.last-update { color:#6b7280; font-size:11px; }
-.header-meta { gap:8px; }
-.countdown-bar { width:54px; background:#e5e7eb; }
-.btn { background:#fff; border:1px solid #e5e7eb; color:#172033; border-radius:9px; padding:8px 12px; }
-.btn.primary { background:#111827; color:#fff; border-color:#111827; }
-
-.section-label {
-    background: transparent;
-    color:#6b7280;
-    text-align:left;
-    padding:0;
-    margin: 0 0 7px 3px;
-    border-radius:0;
-    font-size:11px;
-    letter-spacing:.14em;
-}
-.dashboard-section { margin-top:15px; }
-
-.top-summary {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-    margin-bottom:0;
-}
-.summary-card {
-    background:#fff;
-    border:1px solid #e5e7eb;
-    border-radius:15px;
-    padding:17px 18px;
-    box-shadow:0 3px 14px rgba(0,0,0,.04);
-}
-.summary-card.us-card {
-    border:1px solid #e5e7eb;
-    border-top:4px solid #2563eb;
-    background:linear-gradient(180deg,#eff6ff,#fff 58%);
-}
-.summary-card.india-card {
-    border:1px solid #e5e7eb;
-    border-top:4px solid #e66a00;
-    background:linear-gradient(180deg,#fff7ed,#fff 58%);
-}
-.summary-card-title {
-    font-family:var(--sans);
-    font-size:17px;
-    font-weight:800;
-    letter-spacing:0;
-    text-transform:none;
-    margin-bottom:9px;
-    display:flex;
-    align-items:center;
-    gap:7px;
-}
-.us-card .summary-card-title, .india-card .summary-card-title { color:#172033; }
-.summary-key-metrics {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-    margin:5px 0 14px;
-}
-.summary-key-metric {
-    min-width:0;
-}
-.summary-key-label {
-    font-size:9px;
-    color:#6b7280;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    margin-bottom:3px;
-}
-.summary-key-value {
-    font-family:var(--mono);
-    font-size:22px;
-    font-weight:800;
-    color:#172033;
-    white-space:nowrap;
-}
-.summary-card-stats {
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:12px;
-}
-.sc-divider { display:none; }
-.sc-stat { text-align:left; }
-.sc-label { font-size:9px; color:#6b7280; }
-.sc-value { font-size:14px; }
-.sc-stat.total-pl .sc-value { padding:0; background:transparent !important; }
-.sc-stat.total-pl .sc-value.green { color:var(--green); }
-.sc-stat.total-pl .sc-value.red { color:var(--red); }
-
-/* performance */
-.performance-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.performance-card {
-    background:#fff;
-    border:1px solid #e5e7eb;
-    border-radius:15px;
-    padding:14px 16px;
-    box-shadow:0 3px 14px rgba(0,0,0,.04);
-}
-.performance-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
-.performance-title { font-size:15px; font-weight:800; }
-.performance-tabs { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
-.perf-tab {
-    padding:5px 8px;
-    border:1px solid #e5e7eb;
-    border-radius:7px;
-    background:#fff;
-    color:#374151;
-    font:700 10px var(--mono);
-    cursor:pointer;
-}
-.perf-tab.active.us { background:#2563eb; border-color:#2563eb; color:#fff; }
-.perf-tab.active.india { background:#e66a00; border-color:#e66a00; color:#fff; }
-
-.perf-tab.active.gold { background:#b8870b; border-color:#b8870b; color:#fff; }
-.performance-card.gold-card { grid-column:1 / -1; }
-
-.gold-legend {
+    .gold-legend {
     display:flex;
     align-items:center;
     gap:14px;
-    margin:9px 54px 0 54px;
+    margin:9px 58px 0 58px;
     color:#6b7280;
     font:10px var(--mono);
     flex-wrap:wrap;
@@ -767,45 +248,23 @@ body {
     gap:5px;
 }
 .gold-legend-swatch {
-    width:10px;
-    height:10px;
-    border-radius:3px;
+    width:18px;
+    height:3px;
+    border-radius:2px;
 }
-.gold-legend-swatch.gldm { background:#b8870b; }
-.gold-legend-swatch.goldbees { background:#e66a00; }
+.gold-legend-swatch.gldm { background:#2563eb; }
+.gold-legend-swatch.goldbees { background:#ffed29; }
 
-.gold-pair-area {
+.gold-line-svg {
     position:absolute;
     left:58px;
     right:58px;
     top:0;
     bottom:0;
-    display:flex;
-    gap:9px; /* gap only between time periods */
-    align-items:flex-end;
-    z-index:2;
-}
-.gold-pair-slot {
-    position:relative;
-    flex:1;
-    min-width:8px;
+    width:calc(100% - 116px);
     height:100%;
-}
-.gold-pair-bar {
-    position:absolute;
-    bottom:0;
-    width:50%;
-    min-height:2px;
-}
-.gold-pair-bar.gldm {
-    left:0;
-    border-radius:4px 0 0 2px;
-    background:linear-gradient(180deg,#f5d56b,#b8870b);
-}
-.gold-pair-bar.goldbees {
-    right:0;
-    border-radius:0 4px 2px 0;
-    background:linear-gradient(180deg,#fb923c,#e66a00);
+    overflow:visible;
+    z-index:2;
 }
 .gold-grid-line {
     position:absolute;
@@ -822,7 +281,7 @@ body {
     transform:translateY(50%);
     color:#6b7280;
     font:9px var(--mono);
-    background:rgba(255,255,255,.90);
+    background:rgba(255,255,255,.92);
     z-index:4;
     white-space:nowrap;
     pointer-events:none;
@@ -848,6 +307,28 @@ body {
 }
 .gold-axis-title-left { left:4px; }
 .gold-axis-title-right { right:4px; }
+.gold-line-gldm {
+    fill:none;
+    stroke:#2563eb;
+    stroke-width:3;
+    stroke-linejoin:round;
+    stroke-linecap:round;
+}
+.gold-line-goldbees {
+    fill:none;
+    stroke:#ffed29;
+    stroke-width:3;
+    stroke-linejoin:round;
+    stroke-linecap:round;
+}
+.gold-point-gldm {
+    fill:#2563eb;
+}
+.gold-point-goldbees {
+    fill:#ffed29;
+    stroke:#9a8500;
+    stroke-width:.6;
+}
 
 
 .performance-chart {
@@ -898,19 +379,19 @@ body {
     align-items:flex-end;
     z-index:2;
 }
-.perf-slot { position:relative; flex:1; min-width:5px; height:100%; }
+.perf-slot { position:relative; flex:1 1 0; min-width:0; height:100%; }
 .perf-bar {
     position:absolute;
     bottom:0;
-    left:17%;
-    width:66%;
+    left:0;
+    width:100%;
     min-height:2px;
     border-radius:5px 5px 2px 2px;
     transition:height .2s ease;
 }
-.perf-bar.us { background:linear-gradient(180deg,#60a5fa,#2563eb); }
-.perf-bar.india { background:linear-gradient(180deg,#fb923c,#e66a00); }
-.perf-bar.below-start { background:linear-gradient(180deg,#fca5a5,#dc2626); }
+.perf-bar.us { background:#2563eb; }
+.perf-bar.india { background:#ffed29; }
+.perf-bar.below-start { background:#dc2626; }
 .perf-start-line {
     position:absolute;
     left:54px;
@@ -957,6 +438,12 @@ body {
 
 .broker-group {
     border-bottom:1px solid #e5e7eb;
+}
+.holdings-master-header {
+    border-bottom:1px solid #e5e7eb;
+}
+.holdings-master-header table {
+    margin:0;
 }
 .broker-group:last-child { border-bottom:none; }
 .broker-head {
@@ -1160,7 +647,7 @@ body {
             <div class="gold-legend">
                 <span class="gold-legend-item"><span class="gold-legend-swatch gldm"></span>GLDM ($)</span>
                 <span class="gold-legend-item"><span class="gold-legend-swatch goldbees"></span>GOLDBEES (₹)</span>
-                <span>Each touching pair = same period · Left axis = GLDM $ · Right axis = GOLDBEES ₹</span>
+                <span>Two price lines · Left axis = GLDM $ · Right axis = GOLDBEES ₹</span>
             </div>
             <div class="performance-chart"><div class="perf-bars" id="goldPerfBars"><div class="perf-loading">Loading…</div></div></div>
             <div class="perf-axis-labels"><span id="goldPerfStart">Start</span><span id="goldPerfMid">Mid</span><span id="goldPerfEnd">Latest</span></div>
@@ -1935,7 +1422,11 @@ function countUSDisplayPositions(groups) {
     return groups.reduce((n, g) => n + g.positions.length, 0);
 }
 
-function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {}) {
+const HOLDINGS_TABLE_HEADER = `<thead><tr>
+    <th>Symbol</th><th>LTP</th><th>Value</th><th>Today P/L</th><th>Total P/L</th><th>Source</th>
+</tr></thead>`;
+
+function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {}, includeHeader = true) {
     const fmt = isIndia ? fINR : fUSD;
     const symCls = isIndia ? 'india' : 'us';
     let desktopRows = '';
@@ -2004,10 +1495,7 @@ function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {})
         </div>`;
     });
 
-    const header = `<thead><tr>
-        <th>Symbol</th><th>LTP</th><th>Value</th><th>Today P/L</th><th>Total P/L</th><th>Source</th>
-    </tr></thead>`;
-
+    const header = includeHeader ? HOLDINGS_TABLE_HEADER : '';
     const html = `<div class="desktop-holdings-table"><table>${header}<tbody>${desktopRows}</tbody></table></div><div class="mobile-holdings-list">${mobileCards}</div>`;
     return { html, totalCost, totalValue, totalTodayPnL };
 }
@@ -2089,6 +1577,57 @@ function sampleSeries(points, maxPoints = 18) {
         const idx = Math.round(i * (points.length - 1) / (maxPoints - 1));
         out.push(points[idx]);
     }
+    return out;
+}
+
+const PERFORMANCE_BAR_COUNT = 20;
+
+/*
+ * Produce exactly N visual points so US, India and Gold charts always use
+ * the same number and width of bars. When the history feed has fewer than
+ * N points, intermediate display points are linearly interpolated between
+ * actual observations. The first and last observations stay exact.
+ */
+function resampleSeriesExact(points, count = PERFORMANCE_BAR_COUNT) {
+    if (!Array.isArray(points) || points.length < 2 || count < 2) return points || [];
+    if (points.length === count) return points.map(p => ({ ...p }));
+
+    const out = [];
+    const last = points.length - 1;
+
+    for (let i = 0; i < count; i++) {
+        const pos = i * last / (count - 1);
+        const lo = Math.floor(pos);
+        const hi = Math.ceil(pos);
+        const frac = pos - lo;
+
+        if (lo === hi) {
+            out.push({ ...points[lo] });
+            continue;
+        }
+
+        const a = points[lo];
+        const b = points[hi];
+        const row = { ...a };
+
+        // Preserve any nonnumeric fields from the nearer endpoint.
+        for (const key of Object.keys(a)) {
+            const av = Number(a[key]);
+            const bv = Number(b[key]);
+
+            if (Number.isFinite(av) && Number.isFinite(bv)) {
+                row[key] = av + (bv - av) * frac;
+            } else if (frac >= 0.5 && key in b) {
+                row[key] = b[key];
+            }
+        }
+
+        // Timestamp should stay an integer.
+        if (Number.isFinite(Number(row.ts))) row.ts = Math.round(Number(row.ts));
+
+        out.push(row);
+    }
+
     return out;
 }
 
@@ -2266,6 +1805,7 @@ async function loadPerformance(market, range = performanceRange[market], force =
             };
         }
 
+        series = resampleSeriesExact(series, PERFORMANCE_BAR_COUNT);
         renderPerformanceBars(market, range, series);
     } catch (e) {
         console.warn(`${market} performance failed`, e);
@@ -2309,43 +1849,43 @@ function axisBounds(values, preferredTicks = 4) {
     return { min: axisMin, max: axisMax };
 }
 
-function renderGoldBars(range, gldmPoints, goldbeesPoints) {
-    const barsEl = document.getElementById('goldPerfBars');
+function renderGoldLines(range, gldmPoints, goldbeesPoints) {
+    const chartEl = document.getElementById('goldPerfBars');
     const retEl = document.getElementById('goldPerfReturn');
     const statusEl = document.getElementById('goldPerfStatus');
-    if (!barsEl || !retEl || !statusEl) return;
+    if (!chartEl || !retEl || !statusEl) return;
 
     if (!gldmPoints || !goldbeesPoints || gldmPoints.length < 2 || goldbeesPoints.length < 2) {
-        barsEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
+        chartEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
         retEl.textContent = '—';
         statusEl.textContent = 'History unavailable';
         return;
     }
 
-    // Pair the two series by relative progress through the selected period.
-    // This keeps a side-by-side visual even though US and India market hours differ.
-    const pairCount = Math.min(20, gldmPoints.length, goldbeesPoints.length);
-
-    const g = sampleSeries(gldmPoints, pairCount)
+    const gClean = gldmPoints
         .map(p => ({ ts:Number(p.ts), price:Number(p.price) }))
         .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0);
 
-    const i = sampleSeries(goldbeesPoints, pairCount)
+    const iClean = goldbeesPoints
         .map(p => ({ ts:Number(p.ts), price:Number(p.price) }))
         .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0);
 
-    const n = Math.min(g.length, i.length);
+    // Use the same number of visual points for both lines.
+    const gSeries = resampleSeriesExact(gClean, PERFORMANCE_BAR_COUNT);
+    const iSeries = resampleSeriesExact(iClean, PERFORMANCE_BAR_COUNT);
+    const n = Math.min(gSeries.length, iSeries.length);
 
     if (n < 2) {
-        barsEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
+        chartEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
         retEl.textContent = '—';
+        statusEl.textContent = 'History unavailable';
         return;
     }
 
-    const gSeries = g.slice(0, n);
-    const iSeries = i.slice(0, n);
+    gSeries.length = n;
+    iSeries.length = n;
 
-    // Force the final pair to the live Worker prices when available.
+    // Last points always use the current Worker quote.
     const liveGLDM = Number(lastPrices.GLDM);
     const liveGB = Number(lastPrices.GOLDBEES);
 
@@ -2358,11 +1898,9 @@ function renderGoldBars(range, gldmPoints, goldbeesPoints) {
 
     const gBounds = axisBounds(gSeries.map(p => p.price), 4);
     const iBounds = axisBounds(iSeries.map(p => p.price), 4);
-
     const gSpan = gBounds.max - gBounds.min;
     const iSpan = iBounds.max - iBounds.min;
 
-    // Shared horizontal grid positions; each side gets its own exact price label.
     const tickCount = 4;
     const gridHtml = [];
 
@@ -2379,48 +1917,63 @@ function renderGoldBars(range, gldmPoints, goldbeesPoints) {
         `);
     }
 
-    const barsHtml = gSeries.map((gp, idx) => {
-        const ip = iSeries[idx];
+    // SVG viewBox uses y=0 at top, so invert each normalized price.
+    const pointString = (series, bounds) => {
+        const span = bounds.max - bounds.min;
+        return series.map((p, idx) => {
+            const x = n === 1 ? 50 : (idx / (n - 1)) * 100;
+            const normalized = (p.price - bounds.min) / span;
+            const y = 100 - (normalized * 100);
+            return `${x.toFixed(3)},${y.toFixed(3)}`;
+        }).join(' ');
+    };
 
-        const gHeight = Math.max(1.5, Math.min(100, ((gp.price - gBounds.min) / gSpan) * 100));
-        const iHeight = Math.max(1.5, Math.min(100, ((ip.price - iBounds.min) / iSpan) * 100));
+    const gPoints = pointString(gSeries, gBounds);
+    const iPoints = pointString(iSeries, iBounds);
 
-        const title =
-            `Period ${idx + 1} | ` +
-            `GLDM $${gp.price.toFixed(2)} | ` +
-            `GOLDBEES ₹${ip.price.toFixed(2)}`;
-
-        return `
-            <div class="gold-pair-slot" title="${title}">
-                <div class="gold-pair-bar gldm" style="height:${gHeight}%"></div>
-                <div class="gold-pair-bar goldbees" style="height:${iHeight}%"></div>
-            </div>
-        `;
+    const gDots = gSeries.map((p, idx) => {
+        const x = n === 1 ? 50 : (idx / (n - 1)) * 100;
+        const y = 100 - ((p.price - gBounds.min) / gSpan) * 100;
+        return `<circle class="gold-point-gldm" cx="${x}" cy="${y}" r="0.9">
+            <title>GLDM $${p.price.toFixed(2)}</title>
+        </circle>`;
     }).join('');
 
-    barsEl.innerHTML = `
+    const iDots = iSeries.map((p, idx) => {
+        const x = n === 1 ? 50 : (idx / (n - 1)) * 100;
+        const y = 100 - ((p.price - iBounds.min) / iSpan) * 100;
+        return `<circle class="gold-point-goldbees" cx="${x}" cy="${y}" r="0.9">
+            <title>GOLDBEES ₹${p.price.toFixed(2)}</title>
+        </circle>`;
+    }).join('');
+
+    chartEl.innerHTML = `
         <div class="gold-axis-title-left">GLDM $</div>
         <div class="gold-axis-title-right">GOLDBEES ₹</div>
         ${gridHtml.join('')}
-        <div class="gold-pair-area">${barsHtml}</div>
+        <svg class="gold-line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="GLDM and GOLDBEES price lines">
+            <polyline class="gold-line-gldm" vector-effect="non-scaling-stroke" points="${gPoints}"></polyline>
+            <polyline class="gold-line-goldbees" vector-effect="non-scaling-stroke" points="${iPoints}"></polyline>
+            ${gDots}
+            ${iDots}
+        </svg>
     `;
 
-    document.getElementById('goldPerfStart').textContent = 'Start';
-    document.getElementById('goldPerfMid').textContent = 'Mid';
-    document.getElementById('goldPerfEnd').textContent = 'Latest';
+    const mid = Math.floor((n - 1) / 2);
+    document.getElementById('goldPerfStart').textContent = perfLabel(gSeries[0].ts, range, 'us');
+    document.getElementById('goldPerfMid').textContent = perfLabel(gSeries[mid].ts, range, 'us');
+    document.getElementById('goldPerfEnd').textContent = perfLabel(gSeries[n - 1].ts, range, 'us');
 
-    const gLatest = gSeries[gSeries.length - 1];
-    const iLatest = iSeries[iSeries.length - 1];
+    const gLatest = gSeries[n - 1];
+    const iLatest = iSeries[n - 1];
 
     retEl.innerHTML =
-        `<span style="color:#b8870b">GLDM $${gLatest.price.toFixed(2)}</span>` +
+        `<span style="color:#2563eb">GLDM $${gLatest.price.toFixed(2)}</span>` +
         ` &nbsp;·&nbsp; ` +
-        `<span style="color:#e66a00">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>`;
-
+        `<span style="color:#9a8500">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>`;
     retEl.className = 'perf-return';
 
-    statusEl.textContent =
-        `Exact ETF prices · ${range}`;
+    statusEl.textContent = `Exact ETF prices · ${range}`;
 }
 
 async function loadGoldPerformance(range = performanceRange.gold, force = false) {
@@ -2437,7 +1990,7 @@ async function loadGoldPerformance(range = performanceRange.gold, force = false)
             getPerformanceHistory('GOLDBEES', range, force)
         ]);
 
-        renderGoldBars(range, gldmPoints, goldbeesPoints);
+        renderGoldLines(range, gldmPoints, goldbeesPoints);
     } catch (e) {
         console.warn('Gold comparison failed', e);
         barsEl.innerHTML = '<div class="perf-loading">Gold comparison history unavailable</div>';
@@ -2503,11 +2056,11 @@ async function updateAllPortfolios() {
         }));
         const usGroups = prepareUSDisplayGroups(usPositions);
 
-        let usHtml = '';
+        let usHtml = `<div class="desktop-holdings-table holdings-master-header"><table>${HOLDINGS_TABLE_HEADER}</table></div>`;
         let usCost = 0, usVal = 0, usTodayPnL = 0;
 
         for (const group of usGroups) {
-            const result = buildTableHTML(group.positions, prices, prevCloses, false, sparklines1);
+            const result = buildTableHTML(group.positions, prices, prevCloses, false, sparklines1, false);
             usCost += result.totalCost;
             usVal += result.totalValue;
             usTodayPnL += result.totalTodayPnL;
