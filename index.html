@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -234,7 +233,7 @@
 @media (max-width: 600px) {
     .performance-grid { grid-template-columns:1fr; }
     .performance-card.gold-card { grid-column:auto; }
-    .summary-key-value { font-size:18px; }
+    .summary-key-value { font-size:17px; }
     .perf-y-label { width:44px; font-size:8px; }
     .perf-grid-line, .perf-start-line { left:49px; }
     .perf-bar-area { left:49px; gap:4px; }
@@ -716,7 +715,7 @@ body {
 }
 .summary-key-value {
     font-family:var(--mono);
-    font-size:22px;
+    font-size:20px;
     font-weight:800;
     color:#172033;
     white-space:nowrap;
@@ -781,7 +780,7 @@ body {
     border-radius:2px;
 }
 .gold-legend-swatch.gldm { background:#2563eb; }
-.gold-legend-swatch.goldbees { background:#b45309; }
+.gold-legend-swatch.goldbees { background:#ff9000; }
 
 .gold-line-svg {
     position:absolute;
@@ -901,8 +900,8 @@ body {
     transition:height .2s ease;
 }
 .perf-bar.us { background:#2563eb; }
-.perf-bar.india { background:#b45309; }
-.perf-bar.below-start { background:#dc2626; }
+.perf-bar.india { background:#ff9000; }
+.perf-bar.below-start { background:#ff0000; }
 .perf-start-line {
     position:absolute;
     left:54px;
@@ -2450,7 +2449,7 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
         ${vGridHtml.join('')}
         <svg class="gold-line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="GLDM and GOLDBEES price lines">
             <polyline points="${gPoints}" fill="none" stroke="#2563eb" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
-            <polyline points="${iPoints}" fill="none" stroke="#b45309" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            <polyline points="${iPoints}" fill="none" stroke="#ff9000" stroke-width="4" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></polyline>
         </svg>
     `;
 
@@ -2465,7 +2464,7 @@ function renderGoldLines(range, gldmPoints, goldbeesPoints) {
     retEl.innerHTML =
         `<span style="color:#2563eb">GLDM $${gLatest.price.toFixed(2)}</span>` +
         ` &nbsp;·&nbsp; ` +
-        `<span style="color:#b45309">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>`;
+        `<span style="color:#ff9000">GOLDBEES ₹${iLatest.price.toFixed(2)}</span>`;
     retEl.className = 'perf-return';
 
     statusEl.textContent = `Exact ETF prices · ${range}`;
