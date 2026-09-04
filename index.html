@@ -600,107 +600,349 @@
             th:first-child, td:first-child { padding-left: 8px; }
             td:last-child, th:last-child { padding-right: 8px; }
         }
-    </style>
+    
+
+/* ================================================================
+   FINAL DASHBOARD GUI
+   Keeps all portfolio / Gist / Worker logic intact.
+   ================================================================ */
+body {
+    background: #f3f5f7;
+    color: #172033;
+    padding: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 15px;
+    box-shadow: 0 3px 14px rgba(0,0,0,.05);
+}
+.header-title { color:#172033; font-size:18px; font-weight:800; letter-spacing:.08em; }
+.last-update { color:#6b7280; font-size:11px; }
+.header-meta { gap:8px; }
+.countdown-bar { width:54px; background:#e5e7eb; }
+.btn { background:#fff; border:1px solid #e5e7eb; color:#172033; border-radius:9px; padding:8px 12px; }
+.btn.primary { background:#111827; color:#fff; border-color:#111827; }
+
+.section-label {
+    background: transparent;
+    color:#6b7280;
+    text-align:left;
+    padding:0;
+    margin: 0 0 7px 3px;
+    border-radius:0;
+    font-size:11px;
+    letter-spacing:.14em;
+}
+.dashboard-section { margin-top:15px; }
+
+.top-summary {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:0;
+}
+.summary-card {
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:15px;
+    padding:17px 18px;
+    box-shadow:0 3px 14px rgba(0,0,0,.04);
+}
+.summary-card.us-card {
+    border:1px solid #e5e7eb;
+    border-top:4px solid #2563eb;
+    background:linear-gradient(180deg,#eff6ff,#fff 58%);
+}
+.summary-card.india-card {
+    border:1px solid #e5e7eb;
+    border-top:4px solid #e66a00;
+    background:linear-gradient(180deg,#fff7ed,#fff 58%);
+}
+.summary-card-title {
+    font-family:var(--sans);
+    font-size:17px;
+    font-weight:800;
+    letter-spacing:0;
+    text-transform:none;
+    margin-bottom:9px;
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+.us-card .summary-card-title, .india-card .summary-card-title { color:#172033; }
+.summary-main-value {
+    font-family:var(--mono);
+    font-size:28px;
+    font-weight:800;
+    margin:3px 0 14px;
+    color:#172033;
+}
+.summary-card-stats {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+}
+.sc-divider { display:none; }
+.sc-stat { text-align:left; }
+.sc-label { font-size:9px; color:#6b7280; }
+.sc-value { font-size:14px; }
+.sc-stat.total-pl .sc-value { padding:0; background:transparent !important; }
+.sc-stat.total-pl .sc-value.green { color:var(--green); }
+.sc-stat.total-pl .sc-value.red { color:var(--red); }
+
+/* performance */
+.performance-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.performance-card {
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:15px;
+    padding:14px 16px;
+    box-shadow:0 3px 14px rgba(0,0,0,.04);
+}
+.performance-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.performance-title { font-size:15px; font-weight:800; }
+.performance-tabs { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
+.perf-tab {
+    padding:5px 8px;
+    border:1px solid #e5e7eb;
+    border-radius:7px;
+    background:#fff;
+    color:#374151;
+    font:700 10px var(--mono);
+    cursor:pointer;
+}
+.perf-tab.active.us { background:#2563eb; border-color:#2563eb; color:#fff; }
+.perf-tab.active.india { background:#e66a00; border-color:#e66a00; color:#fff; }
+.performance-chart {
+    position:relative;
+    height:210px;
+    margin-top:13px;
+    border-left:1px solid #e5e7eb;
+    border-bottom:1px solid #e5e7eb;
+    background:
+      linear-gradient(to bottom, transparent 24.7%, #eef0f3 25%, transparent 25.3%),
+      linear-gradient(to bottom, transparent 49.7%, #cbd5e1 50%, transparent 50.3%),
+      linear-gradient(to bottom, transparent 74.7%, #eef0f3 75%, transparent 75.3%);
+    overflow:hidden;
+}
+.perf-bars {
+    position:absolute;
+    inset:0 7px 0 7px;
+    display:flex;
+    gap:6px;
+}
+.perf-slot { position:relative; flex:1; min-width:5px; height:100%; }
+.perf-bar {
+    position:absolute;
+    left:17%;
+    width:66%;
+    min-height:2px;
+    border-radius:5px 5px 2px 2px;
+    transition:height .2s ease;
+}
+.perf-bar.positive.us { bottom:50%; background:linear-gradient(180deg,#60a5fa,#2563eb); }
+.perf-bar.positive.india { bottom:50%; background:linear-gradient(180deg,#fb923c,#e66a00); }
+.perf-bar.negative { top:50%; background:linear-gradient(180deg,#fca5a5,#dc2626); border-radius:2px 2px 5px 5px; }
+.perf-axis-labels { display:flex; justify-content:space-between; gap:6px; margin-top:5px; color:#6b7280; font:9px var(--mono); }
+.performance-foot { display:flex; justify-content:space-between; gap:12px; margin-top:7px; color:#6b7280; font:10px var(--mono); }
+.performance-foot .perf-return.green { color:var(--green); font-weight:700; }
+.performance-foot .perf-return.red { color:var(--red); font-weight:700; }
+.perf-loading { display:flex; align-items:center; justify-content:center; height:100%; color:#9ca3af; font:11px var(--mono); }
+
+/* separate holdings */
+.holdings-section { margin-top:15px; }
+.holdings-card {
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:15px;
+    overflow:hidden;
+    box-shadow:0 3px 14px rgba(0,0,0,.04);
+}
+.holdings-titlebar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:11px 15px;
+    border-bottom:1px solid #e5e7eb;
+}
+.holdings-titlebar.us { background:#eff6ff; border-top:3px solid #2563eb; }
+.holdings-titlebar.india { background:#fff7ed; border-top:3px solid #e66a00; }
+.holdings-title { font-size:14px; font-weight:800; }
+.holdings-count { color:#6b7280; font:10px var(--mono); }
+.table-wrap { background:#fff !important; border:0; border-radius:0; overflow-x:auto; }
+.holdings-card table { table-layout:fixed; width:100%; border-collapse:collapse; }
+.holdings-card table th:nth-child(1), .holdings-card table td:nth-child(1) { width:18%; text-align:left; }
+.holdings-card table th:nth-child(2), .holdings-card table td:nth-child(2) { width:17%; text-align:left; }
+.holdings-card table th:nth-child(3), .holdings-card table td:nth-child(3) { width:18%; text-align:center; }
+.holdings-card table th:nth-child(4), .holdings-card table td:nth-child(4) { width:17%; text-align:center; }
+.holdings-card table th:nth-child(5), .holdings-card table td:nth-child(5) { width:18%; text-align:center; }
+.holdings-card table th:nth-child(6), .holdings-card table td:nth-child(6) { width:12%; text-align:center; }
+.holdings-card thead tr { background:#f8fafc !important; border-top:0 !important; border-bottom:1px solid #e5e7eb !important; }
+.holdings-card th { padding:10px 12px; font-size:10px; color:#6b7280; border-right:0; }
+.holdings-card td { padding:13px 12px; border-right:0; }
+.holdings-card tbody tr { border-bottom:1px solid #e5e7eb; }
+.holdings-card tbody tr:last-child { border-bottom:0; }
+.price-cell { font-size:16px; color:#172033; }
+.data-fresh { display:block; margin-top:2px; color:#0f9d58; font:700 9px var(--mono); }
+.data-fresh.closed { color:#6b7280; }
+.data-fresh.stale { color:#b45309; }
+.source-cell { color:#6b7280; font:10px var(--mono); white-space:normal; }
+.today-main { font-size:11px; }
+.today-pct { font-size:9px; }
+.pl-wrapper { padding:5px 7px !important; border-radius:7px !important; }
+.mobile-holdings-list { display:none; }
+.mobile-holding-card { padding:14px 15px; border-bottom:1px solid #e5e7eb; }
+.mobile-holding-card:last-child { border-bottom:0; }
+.mobile-holding-top { display:flex; justify-content:space-between; gap:12px; }
+.mobile-holding-symbol { font-size:17px; font-weight:800; }
+.mobile-holding-price { text-align:right; font:800 20px var(--mono); }
+.mobile-holding-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:11px; }
+.mobile-mini-label { color:#6b7280; font:9px var(--mono); text-transform:uppercase; letter-spacing:.06em; }
+.mobile-mini-value { margin-top:2px; font:700 12px var(--mono); }
+
+@media (max-width:760px) {
+    body { padding:8px; }
+    .header { padding:12px; border-radius:12px; }
+    .header-title { font-size:16px; }
+    .header-meta { gap:5px; }
+    .countdown-bar { display:none; }
+    .btn { padding:7px 9px; font-size:10px; }
+    .top-summary, .performance-grid { grid-template-columns:1fr; }
+    .summary-card { padding:14px; }
+    .summary-main-value { font-size:25px; }
+    .summary-card-stats { grid-template-columns:repeat(3,1fr); }
+    .performance-card { padding:12px; }
+    .performance-chart { height:180px; }
+    .desktop-holdings-table { display:none; }
+    .mobile-holdings-list { display:block; }
+}
+
+</style>
 </head>
 <body>
 
 <!-- HEADER -->
 <div class="header">
-    <div style="display:flex;flex-direction:column;gap:2px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-            <div class="pulse-dot active" id="statusDot"></div>
-            <span class="header-title">PORTFOLIO</span>
+    <div style="display:flex;align-items:center;gap:11px;">
+        <div class="pulse-dot active" id="statusDot"></div>
+        <div>
+            <div class="header-title">PORTFOLIO</div>
+            <div class="last-update" id="lastUpdate">–</div>
         </div>
-        <span class="last-update" id="lastUpdate" style="padding-left:15px;">–</span>
     </div>
     <div class="header-meta">
         <div class="countdown-bar"><div class="countdown-fill" id="countdownFill" style="width:100%"></div></div>
-        <button class="btn" onclick="manualRefresh()" id="refreshBtn">↺ Refresh</button>
+        <button class="btn" onclick="manualRefresh()" id="refreshBtn">↻ Refresh</button>
         <button class="btn primary" onclick="openSettings()">⚙ Manage</button>
     </div>
 </div>
 
-
-<!-- INVESTMENTS SUMMARY LABEL -->
-<div class="section-label">INVESTMENTS SUMMARY</div>
-
-<!-- TOP SUMMARY BOX -->
-<div class="top-summary">
-    <div class="summary-card us-card">
-        <div class="summary-card-title"><span>🇺🇸</span> US <span class="market-badge closed" id="usMarketBadge">Closed</span></div>
-        <div class="summary-card-stats">
-            <div class="sc-stat">
-                <div class="sc-label">Value</div>
-                <div class="sc-value" id="usTotalValue">$–</div>
-            </div>
-            <div class="sc-divider"></div>
-            <div class="sc-stat">
-                <div class="sc-label">Today P/L</div>
-                <div class="sc-value" id="usTodayPnL">$–</div>
-            </div>
-            <div class="sc-divider"></div>
-            <div class="sc-stat total-pl">
-                <div class="sc-label">Total P/L</div>
-                <div class="sc-value" id="usTotalPnL">$–</div>
-            </div>
-            <div class="sc-divider"></div>
-            <div class="sc-stat">
-                <div class="sc-label">Return</div>
-                <div class="sc-value" id="usTotalReturn">–%</div>
+<!-- INVESTMENTS SUMMARY -->
+<div class="dashboard-section">
+    <div class="section-label">INVESTMENTS SUMMARY</div>
+    <div class="top-summary">
+        <div class="summary-card us-card">
+            <div class="summary-card-title"><span>🇺🇸</span> US Portfolio <span class="market-badge closed" id="usMarketBadge">Closed</span></div>
+            <div class="summary-main-value" id="usTotalValue">$–</div>
+            <div class="summary-card-stats">
+                <div class="sc-stat">
+                    <div class="sc-label">Today P/L</div>
+                    <div class="sc-value" id="usTodayPnL">$–</div>
+                </div>
+                <div class="sc-stat total-pl">
+                    <div class="sc-label">Total P/L</div>
+                    <div class="sc-value" id="usTotalPnL">$–</div>
+                </div>
+                <div class="sc-stat">
+                    <div class="sc-label">Return</div>
+                    <div class="sc-value" id="usTotalReturn">–%</div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="summary-card india-card">
-        <div class="summary-card-title"><span>🇮🇳</span> India <span class="market-badge closed" id="indiaMarketBadge">Closed</span></div>
-        <div class="summary-card-stats">
-            <div class="sc-stat">
-                <div class="sc-label">Value</div>
-                <div class="sc-value" id="indiaTotalValue">₹–</div>
-            </div>
-            <div class="sc-divider"></div>
-            <div class="sc-stat">
-                <div class="sc-label">Today P/L</div>
-                <div class="sc-value" id="indiaTodayPnL">₹–</div>
-            </div>
-            <div class="sc-divider"></div>
-            <div class="sc-stat total-pl">
-                <div class="sc-label">Total P/L</div>
-                <div class="sc-value" id="indiaTotalPnL">₹–</div>
-            </div>
-            <div class="sc-divider"></div>
-            <div class="sc-stat">
-                <div class="sc-label">Return</div>
-                <div class="sc-value" id="indiaTotalReturn">–%</div>
+
+        <div class="summary-card india-card">
+            <div class="summary-card-title"><span>🇮🇳</span> India Portfolio <span class="market-badge closed" id="indiaMarketBadge">Closed</span></div>
+            <div class="summary-main-value" id="indiaTotalValue">₹–</div>
+            <div class="summary-card-stats">
+                <div class="sc-stat">
+                    <div class="sc-label">Today P/L</div>
+                    <div class="sc-value" id="indiaTodayPnL">₹–</div>
+                </div>
+                <div class="sc-stat total-pl">
+                    <div class="sc-label">Total P/L</div>
+                    <div class="sc-value" id="indiaTotalPnL">₹–</div>
+                </div>
+                <div class="sc-stat">
+                    <div class="sc-label">Return</div>
+                    <div class="sc-value" id="indiaTotalReturn">–%</div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- INVESTMENT DETAILS LABEL -->
-<div class="section-label" style="margin-top:10px;">INVESTMENT DETAILS</div>
+<!-- PERFORMANCE -->
+<div class="dashboard-section">
+    <div class="section-label">PERFORMANCE</div>
+    <div class="performance-grid">
+        <div class="performance-card">
+            <div class="performance-head">
+                <div class="performance-title">🇺🇸 US Performance</div>
+                <div class="performance-tabs">
+                    <button class="perf-tab active us" data-market="us" data-range="1D" onclick="setPerformanceRange('us','1D')">1D</button>
+                    <button class="perf-tab" data-market="us" data-range="5D" onclick="setPerformanceRange('us','5D')">5D</button>
+                    <button class="perf-tab" data-market="us" data-range="1M" onclick="setPerformanceRange('us','1M')">1M</button>
+                    <button class="perf-tab" data-market="us" data-range="3M" onclick="setPerformanceRange('us','3M')">3M</button>
+                </div>
+            </div>
+            <div class="performance-chart"><div class="perf-bars" id="usPerfBars"><div class="perf-loading">Loading…</div></div></div>
+            <div class="perf-axis-labels"><span id="usPerfStart">–</span><span id="usPerfMid">–</span><span id="usPerfEnd">–</span></div>
+            <div class="performance-foot"><span id="usPerfStatus">–</span><span class="perf-return" id="usPerfReturn">–</span></div>
+        </div>
 
-<div class="details-wrap">
-<!-- US PORTFOLIO -->
-<div class="region-block">
-    <div class="region-header us">
-        <span class="region-flag">🇺🇸</span>
-        <span class="region-name us">US Positions</span>
-    </div>
-    <div class="table-wrap us" id="usTable">
-        <table><tbody id="usTableBody"><tr class="skeleton-row"><td colspan="7"><div class="skel" style="width:80%"></div></td></tr></tbody></table>
+        <div class="performance-card">
+            <div class="performance-head">
+                <div class="performance-title">🇮🇳 India Performance</div>
+                <div class="performance-tabs">
+                    <button class="perf-tab active india" data-market="india" data-range="1D" onclick="setPerformanceRange('india','1D')">1D</button>
+                    <button class="perf-tab" data-market="india" data-range="5D" onclick="setPerformanceRange('india','5D')">5D</button>
+                    <button class="perf-tab" data-market="india" data-range="1M" onclick="setPerformanceRange('india','1M')">1M</button>
+                    <button class="perf-tab" data-market="india" data-range="3M" onclick="setPerformanceRange('india','3M')">3M</button>
+                </div>
+            </div>
+            <div class="performance-chart"><div class="perf-bars" id="indiaPerfBars"><div class="perf-loading">Loading…</div></div></div>
+            <div class="perf-axis-labels"><span id="indiaPerfStart">–</span><span id="indiaPerfMid">–</span><span id="indiaPerfEnd">–</span></div>
+            <div class="performance-foot"><span id="indiaPerfStatus">–</span><span class="perf-return" id="indiaPerfReturn">–</span></div>
+        </div>
     </div>
 </div>
 
-<!-- INDIA PORTFOLIO -->
-<div class="region-block">
-    <div class="region-header india">
-        <span class="region-flag">🇮🇳</span>
-        <span class="region-name india">India Positions</span>
-    </div>
-    <div class="table-wrap india" id="indiaTableWrap">
-        <table><tbody id="indiaTableBody"><tr class="skeleton-row"><td colspan="7"><div class="skel" style="width:80%"></div></td></tr></tbody></table>
+<!-- US HOLDINGS -->
+<div class="holdings-section">
+    <div class="section-label">US HOLDINGS</div>
+    <div class="holdings-card">
+        <div class="holdings-titlebar us"><div class="holdings-title">🇺🇸 US Holdings</div><div class="holdings-count" id="usHoldingsCount">–</div></div>
+        <div class="table-wrap" id="usTable"><div class="perf-loading" style="height:80px">Loading…</div></div>
     </div>
 </div>
+
+<!-- INDIA HOLDINGS -->
+<div class="holdings-section">
+    <div class="section-label">INDIA HOLDINGS</div>
+    <div class="holdings-card">
+        <div class="holdings-titlebar india"><div class="holdings-title">🇮🇳 India Holdings</div><div class="holdings-count" id="indiaHoldingsCount">–</div></div>
+        <div class="table-wrap" id="indiaTableWrap"><div class="perf-loading" style="height:80px">Loading…</div></div>
+    </div>
 </div>
 
 <!-- SETTINGS MODAL -->
@@ -1303,111 +1545,102 @@ function buildSparklineSVG(closes, isUp) {
 // ─────────────────────────────────────────────
 //  RENDER TABLE
 // ─────────────────────────────────────────────
+function quoteDisplayMeta(symbol, isIndia) {
+    const q = priceFeedCache?.quotes?.[symbol];
+    const status = isIndia ? indiaMarketStatus() : usMarketStatus();
+
+    if (!q || q.ok === false) {
+        return { freshness: 'NO DATA', freshClass: 'stale', source: '—' };
+    }
+
+    if (q.stale === true) {
+        return { freshness: '⚠ STALE', freshClass: 'stale', source: q.source || '—' };
+    }
+
+    if (status === 'closed') {
+        return { freshness: 'CLOSED', freshClass: 'closed', source: q.source || '—' };
+    }
+
+    const age = Number(q.ageSec);
+    const freshness = Number.isFinite(age)
+        ? (age < 60 ? `LIVE • ${Math.max(0, Math.round(age))}s` : `LIVE • ${Math.round(age / 60)}m`)
+        : 'LIVE';
+
+    return { freshness, freshClass: '', source: q.source || '—' };
+}
+
 function buildTableHTML(positions, prices, prevCloses, isIndia, sparklines = {}) {
     const fmt = isIndia ? fINR : fUSD;
     const symCls = isIndia ? 'india' : 'us';
-    let rows = '';
+    let desktopRows = '';
+    let mobileCards = '';
     let totalCost = 0, totalValue = 0, totalTodayPnL = 0;
 
-    positions.forEach((pos, posIdx) => {
+    positions.forEach((pos) => {
         const price = prices[pos.symbol];
         const priceAvailable = price != null && Number.isFinite(price);
         const effectivePrice = priceAvailable ? price : null;
-        const prevClose    = priceAvailable ? (prevCloses[pos.symbol] || price) : null;
-        const invested     = pos.investedAmount > 0 ? pos.investedAmount : pos.units * pos.purchasePrice;
-        const cost         = invested;
-        const val          = priceAvailable ? pos.units * effectivePrice : 0;
-        const pnl          = priceAvailable ? val - cost : 0;
-        const pnlPct       = priceAvailable && cost > 0 ? (pnl / cost) * 100 : 0;
-        const todayDate    = new Date().toISOString().slice(0, 10);
-        const isToday      = pos.addedDate === todayDate;
-        const todayBase    = priceAvailable ? (isToday ? pos.purchasePrice : prevClose) : null;
-        const todayPnL     = priceAvailable && todayBase ? (effectivePrice - todayBase) * pos.units : 0;
-        const todayPct     = priceAvailable && todayBase > 0 ? ((effectivePrice - todayBase) / todayBase) * 100 : 0;
+        const prevClose = priceAvailable ? (prevCloses[pos.symbol] || price) : null;
+        const invested = pos.investedAmount > 0 ? pos.investedAmount : pos.units * pos.purchasePrice;
+        const cost = invested;
+        const val = priceAvailable ? pos.units * effectivePrice : 0;
+        const pnl = priceAvailable ? val - cost : 0;
+        const pnlPct = priceAvailable && cost > 0 ? (pnl / cost) * 100 : 0;
+        const todayDate = new Date().toISOString().slice(0, 10);
+        const isToday = pos.addedDate === todayDate;
+        const todayBase = priceAvailable ? (isToday ? pos.purchasePrice : prevClose) : null;
+        const todayPnL = priceAvailable && todayBase ? (effectivePrice - todayBase) * pos.units : 0;
+        const todayPct = priceAvailable && todayBase > 0 ? ((effectivePrice - todayBase) / todayBase) * 100 : 0;
+
         totalCost += cost;
         if (priceAvailable) totalValue += val;
         if (priceAvailable) totalTodayPnL += todayPnL;
 
-        // Price alert
-        const hasTarget    = pos.targetPrice > 0;
+        const hasTarget = pos.targetPrice > 0;
         const alertTriggered = pos.alertTriggered || false;
-        const targetHit    = priceAvailable && hasTarget && !alertTriggered && effectivePrice >= pos.targetPrice;
+        const targetHit = priceAvailable && hasTarget && !alertTriggered && effectivePrice >= pos.targetPrice;
         if (targetHit) fireAlert(pos, effectivePrice, isIndia);
-        const alertIcon    = !hasTarget ? '' : alertTriggered
+        const alertIcon = !hasTarget ? '' : alertTriggered
             ? `<span title="Target hit: ${fmt(pos.targetPrice)}" style="margin-left:4px;font-size:10px;">✅</span>`
             : `<span title="Target: ${fmt(pos.targetPrice)}" style="margin-left:4px;font-size:10px;">🎯</span>`;
-        const rowFlash     = targetHit ? 'alert-flash' : '';
 
-        // Sparkline
-        const spark        = sparklines[pos.symbol] || [];
-        const sparkUp      = spark.length >= 2 ? spark[spark.length-1] >= spark[0] : true;
-        const sparkSVG     = buildSparklineSVG(spark, sparkUp);
-
-        const plCls    = pnl >= 0 ? 'chg-pos' : 'chg-neg';
+        const plCls = pnl >= 0 ? 'chg-pos' : 'chg-neg';
         const todayCls = todayPnL >= 0 ? 'chg-pos' : 'chg-neg';
-        const unitsStr = isIndia ? pos.units.toLocaleString('en-IN') : pos.units.toFixed(6);
-
+        const meta = quoteDisplayMeta(pos.symbol, isIndia);
         const tvSym = isIndia ? `NSE:${pos.symbol}` : pos.symbol;
         const tvUrl = `https://www.tradingview.com/chart/?symbol=${tvSym}`;
-        rows += `<tr class="row-main ${rowFlash}">
-            <td style="text-align:left"><a href="${tvUrl}" target="_blank" style="text-decoration:none"><span class="sym ${symCls}">${pos.symbol}</span></a>${pos.note ? `<span class="note-tag">${pos.note}</span>` : ''}${alertIcon}</td>
-            <td style="text-align:left" class="price-cell">${priceAvailable ? fmt(effectivePrice) : 'N/A'}</td>
-            <td style="text-align:center" class="units-cell col-desktop">${unitsStr}</td>
-            <td style="text-align:center" class="avg-cell col-desktop">${fmt(pos.purchasePrice)}</td>
-            <td style="text-align:center" class="cost-cell col-desktop">${fmt(cost)}</td>
-            <td style="text-align:center" class="value-cell">${priceAvailable ? fmt(val) : '—'}</td>
-            <td style="text-align:center" class="col-desktop">
-                ${priceAvailable ? `<div class="pl-wrapper ${plCls}">
-                    <div class="pl-main ${plCls}">${(pnl>=0?'+':'') + fmt(pnl)}</div>
-                    <div class="pl-pct ${plCls}">${fPct(pnlPct)}</div>
-                </div>` : '—'}
-            </td>
-            <td style="text-align:center">
-                ${priceAvailable ? `<div class="today-main ${todayCls}">${(todayPnL>=0?'+':'') + fmt(todayPnL)}</div>
-                <div class="today-pct ${todayCls}">${fPct(todayPct)}</div>` : '—'}
-            </td>
-            <td style="text-align:center" class="col-desktop">${sparkSVG}</td>
-        </tr>
-        <tr class="row-mobile">
-            <td colspan="4" style="padding-top:0;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">
-                <div style="display:flex;gap:0;font-size:10px;">
-                    <div style="flex:1;color:var(--muted)">
-                        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Units</div>
-                        <div style="color:var(--text)">${unitsStr}</div>
-                    </div>
-                    <div style="flex:1;color:var(--muted)">
-                        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Avg</div>
-                        <div style="color:var(--text)">${fmt(pos.purchasePrice)}</div>
-                    </div>
-                    <div style="flex:1;color:var(--muted)">
-                        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Invested</div>
-                        <div style="color:var(--text)">${fmt(cost)}</div>
-                    </div>
-                    <div style="flex:1;text-align:right">
-                        <div style="font-size:8px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;color:var(--muted)">Total P/L</div>
-                        <div class="pl-wrapper ${plCls}">
-                            <div class="pl-main ${plCls}">${(pnl>=0?'+':'') + fmt(pnl)}</div>
-                            <div class="pl-pct ${plCls}">${fPct(pnlPct)}</div>
-                        </div>
-                    </div>
-                </div>
-            </td>
+
+        const symHtml = `<a href="${tvUrl}" target="_blank" style="text-decoration:none"><span class="sym ${symCls}">${pos.symbol}</span></a>${pos.note ? `<span class="note-tag">${pos.note}</span>` : ''}${alertIcon}`;
+
+        desktopRows += `<tr>
+            <td>${symHtml}</td>
+            <td class="price-cell">${priceAvailable ? fmt(effectivePrice) : 'N/A'}<span class="data-fresh ${meta.freshClass}">${meta.freshness}</span></td>
+            <td class="value-cell">${priceAvailable ? fmt(val) : '—'}</td>
+            <td>${priceAvailable ? `<div class="today-main ${todayCls}">${(todayPnL>=0?'+':'') + fmt(todayPnL)}</div><div class="today-pct ${todayCls}">${fPct(todayPct)}</div>` : '—'}</td>
+            <td>${priceAvailable ? `<div class="pl-wrapper ${plCls}"><div class="pl-main ${plCls}">${(pnl>=0?'+':'') + fmt(pnl)}</div><div class="pl-pct ${plCls}">${fPct(pnlPct)}</div></div>` : '—'}</td>
+            <td class="source-cell">${meta.source}</td>
         </tr>`;
+
+        mobileCards += `<div class="mobile-holding-card">
+            <div class="mobile-holding-top">
+                <div><div class="mobile-holding-symbol">${symHtml}</div><span class="data-fresh ${meta.freshClass}">${meta.freshness}</span></div>
+                <div class="mobile-holding-price">${priceAvailable ? fmt(effectivePrice) : 'N/A'}</div>
+            </div>
+            <div class="mobile-holding-grid">
+                <div><div class="mobile-mini-label">Value</div><div class="mobile-mini-value">${priceAvailable ? fmt(val) : '—'}</div></div>
+                <div><div class="mobile-mini-label">Today</div><div class="mobile-mini-value ${todayCls}">${priceAvailable ? ((todayPnL>=0?'+':'') + fmt(todayPnL)) : '—'}</div></div>
+                <div><div class="mobile-mini-label">Total P/L</div><div class="mobile-mini-value ${plCls}">${priceAvailable ? ((pnl>=0?'+':'') + fmt(pnl)) : '—'}</div></div>
+                <div><div class="mobile-mini-label">Source</div><div class="source-cell">${meta.source}</div></div>
+            </div>
+        </div>`;
     });
 
     const header = `<thead><tr>
-        <th style="text-align:left">Symbol</th>
-        <th style="text-align:left">LTP</th>
-        <th style="text-align:center" class="col-desktop">Units</th>
-        <th style="text-align:center" class="col-desktop">Avg</th>
-        <th style="text-align:center" class="col-desktop">Invested</th>
-        <th style="text-align:center">Value</th>
-        <th style="text-align:center" class="col-desktop">Total P/L</th>
-        <th style="text-align:center">Today P/L</th>
-        <th style="text-align:center" class="col-desktop">5D</th>
+        <th>Symbol</th><th>LTP</th><th>Value</th><th>Today P/L</th><th>Total P/L</th><th>Source</th>
     </tr></thead>`;
 
-    return { html: `<table>${header}<tbody>${rows}</tbody></table>`, totalCost, totalValue, totalTodayPnL };
+    const html = `<div class="desktop-holdings-table"><table>${header}<tbody>${desktopRows}</tbody></table></div><div class="mobile-holdings-list">${mobileCards}</div>`;
+    return { html, totalCost, totalValue, totalTodayPnL };
 }
 
 function updateSummary(prefix, fmt, totalValue, totalCost, totalTodayPnL) {
@@ -1422,6 +1655,175 @@ function updateSummary(prefix, fmt, totalValue, totalCost, totalTodayPnL) {
     if (pnlEl) { pnlEl.textContent  = (pnl>=0?'+':'') + fmt(pnl);  pnlEl.className  = 'sc-value ' + (pnl >= 0 ? 'green' : 'red'); }
     if (retEl) { retEl.textContent  = fPct(ret);                    retEl.className  = 'sc-value ' + (ret >= 0 ? 'green' : 'red'); }
     if (todayEl){ todayEl.textContent = (totalTodayPnL>=0?'+':'') + fmt(totalTodayPnL); todayEl.className = 'sc-value ' + (totalTodayPnL >= 0 ? 'green' : 'red'); }
+}
+
+
+// ─────────────────────────────────────────────
+//  PERFORMANCE BAR CHARTS
+// ─────────────────────────────────────────────
+const performanceRange = { us: '1D', india: '1D' };
+const performanceHistoryCache = new Map();
+
+function workerBaseUrl() {
+    return PRICE_API_URL.replace(/\/+$/, '');
+}
+
+async function getPerformanceHistory(symbol, range, force = false) {
+    const key = `${symbol}|${range}`;
+    const cached = performanceHistoryCache.get(key);
+    if (!force && cached && (Date.now() - cached.fetchedAt) < 5 * 60 * 1000) {
+        return cached.points;
+    }
+
+    const url = `${workerBaseUrl()}/history?symbol=${encodeURIComponent(symbol)}&range=${encodeURIComponent(range)}&_=${Date.now()}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`History HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data?.ok || !Array.isArray(data.points) || data.points.length < 2) {
+        throw new Error('No usable history');
+    }
+
+    const points = data.points
+        .map(p => ({ ts:Number(p.ts), price:Number(p.price) }))
+        .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.price) && p.price > 0);
+
+    if (points.length < 2) throw new Error('No usable history');
+    performanceHistoryCache.set(key, { fetchedAt: Date.now(), points });
+    return points;
+}
+
+function nearestHistoryPrice(points, ts) {
+    let best = null;
+    let bestDiff = Infinity;
+    for (const p of points) {
+        const d = Math.abs(p.ts - ts);
+        if (d < bestDiff) { best = p.price; bestDiff = d; }
+    }
+    return best;
+}
+
+function sampleSeries(points, maxPoints = 18) {
+    if (points.length <= maxPoints) return points;
+    const out = [];
+    for (let i = 0; i < maxPoints; i++) {
+        const idx = Math.round(i * (points.length - 1) / (maxPoints - 1));
+        out.push(points[idx]);
+    }
+    return out;
+}
+
+function perfLabel(ts, range, market) {
+    const zone = market === 'us' ? 'America/New_York' : 'Asia/Kolkata';
+    const d = new Date(ts * 1000);
+    if (range === '1D') {
+        return d.toLocaleTimeString('en-US', { timeZone:zone, hour:'numeric', minute:'2-digit' });
+    }
+    return d.toLocaleDateString('en-US', { timeZone:zone, month:'short', day:'numeric' });
+}
+
+function renderPerformanceBars(market, range, series) {
+    const barsEl = document.getElementById(`${market}PerfBars`);
+    const retEl = document.getElementById(`${market}PerfReturn`);
+    const statusEl = document.getElementById(`${market}PerfStatus`);
+    if (!barsEl || !retEl || !statusEl) return;
+
+    if (!series || series.length < 2) {
+        barsEl.innerHTML = '<div class="perf-loading">Performance data unavailable</div>';
+        retEl.textContent = '—';
+        statusEl.textContent = 'No history';
+        return;
+    }
+
+    const firstValue = series[0].value;
+    const plotted = series.map(p => ({
+        ...p,
+        pct: firstValue > 0 ? ((p.value - firstValue) / firstValue) * 100 : 0
+    }));
+
+    const maxAbs = Math.max(0.15, ...plotted.map(p => Math.abs(p.pct)));
+    barsEl.innerHTML = plotted.map(p => {
+        const height = Math.max(2, Math.min(48, (Math.abs(p.pct) / maxAbs) * 47));
+        const cls = p.pct >= 0 ? `positive ${market}` : 'negative';
+        const title = `${perfLabel(p.ts, range, market)} · ${p.pct >= 0 ? '+' : ''}${p.pct.toFixed(2)}%`;
+        return `<div class="perf-slot" title="${title}"><div class="perf-bar ${cls}" style="height:${height}%"></div></div>`;
+    }).join('');
+
+    const mid = plotted[Math.floor((plotted.length - 1) / 2)];
+    document.getElementById(`${market}PerfStart`).textContent = perfLabel(plotted[0].ts, range, market);
+    document.getElementById(`${market}PerfMid`).textContent = perfLabel(mid.ts, range, market);
+    document.getElementById(`${market}PerfEnd`).textContent = perfLabel(plotted[plotted.length - 1].ts, range, market);
+
+    const latest = plotted[plotted.length - 1].pct;
+    retEl.textContent = `${range} ${latest >= 0 ? '+' : ''}${latest.toFixed(2)}%`;
+    retEl.className = 'perf-return ' + (latest >= 0 ? 'green' : 'red');
+
+    const status = market === 'us' ? usMarketStatus() : indiaMarketStatus();
+    statusEl.textContent = status === 'open' ? 'Market open' : (status === 'extended' ? 'Extended hours' : 'Market closed');
+}
+
+async function loadPerformance(market, range = performanceRange[market], force = false) {
+    const barsEl = document.getElementById(`${market}PerfBars`);
+    if (!barsEl) return;
+
+    const positions = market === 'us' ? usPositions : indiaPositions;
+    if (!positions.length) {
+        renderPerformanceBars(market, range, []);
+        return;
+    }
+
+    try {
+        if (force) barsEl.innerHTML = '<div class="perf-loading">Loading…</div>';
+
+        const uniqueSymbols = [...new Set(positions.map(p => p.symbol))];
+        const histories = {};
+        await Promise.all(uniqueSymbols.map(async symbol => {
+            histories[symbol] = await getPerformanceHistory(symbol, range, force);
+        }));
+
+        const anchor = histories[uniqueSymbols[0]];
+        let timeline = sampleSeries(anchor, 18).map(p => p.ts);
+        let series = timeline.map(ts => {
+            let value = 0;
+            for (const pos of positions) {
+                const price = nearestHistoryPrice(histories[pos.symbol], ts);
+                if (Number.isFinite(price)) value += pos.units * price;
+            }
+            return { ts, value };
+        }).filter(p => p.value > 0);
+
+        // Make the last bar agree with the current live quote feed, especially
+        // GOLDBEES where TradingView is the LTP source and Yahoo is only history.
+        let liveValue = 0;
+        let haveAllLive = true;
+        for (const pos of positions) {
+            const live = Number(lastPrices[pos.symbol]);
+            if (!Number.isFinite(live) || live <= 0) { haveAllLive = false; break; }
+            liveValue += pos.units * live;
+        }
+        if (haveAllLive && liveValue > 0 && series.length) {
+            series[series.length - 1] = {
+                ts: Math.floor(Date.now() / 1000),
+                value: liveValue
+            };
+        }
+
+        renderPerformanceBars(market, range, series);
+    } catch (e) {
+        console.warn(`${market} performance failed`, e);
+        barsEl.innerHTML = '<div class="perf-loading">Performance data unavailable</div>';
+        document.getElementById(`${market}PerfReturn`).textContent = '—';
+        document.getElementById(`${market}PerfStatus`).textContent = 'History unavailable';
+    }
+}
+
+function setPerformanceRange(market, range) {
+    performanceRange[market] = range;
+    document.querySelectorAll(`.perf-tab[data-market="${market}"]`).forEach(btn => {
+        const active = btn.dataset.range === range;
+        btn.classList.toggle('active', active);
+        btn.classList.toggle(market, active);
+    });
+    loadPerformance(market, range, true);
 }
 
 const INDIA_WRITEOFFS = 44865; // BINNY: 119 units @ ₹377.02 — delisted, value = ₹0, silently deducted
@@ -1469,8 +1871,11 @@ async function updateAllPortfolios() {
         const { html: usHtml, totalCost: usCost, totalValue: usVal, totalTodayPnL: usTodayPnL } = buildTableHTML(usPositions, prices, prevCloses, false, sparklines1);
         updateSummary('us', fUSD, usVal, usCost, usTodayPnL);
         document.getElementById('usTable').innerHTML = usHtml;
+        const usCountEl = document.getElementById('usHoldingsCount');
+        if (usCountEl) usCountEl.textContent = `${usPositions.length} position${usPositions.length === 1 ? '' : 's'}`;
     } else {
         document.getElementById('usTable').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No US positions — add some in Settings.</div>';
+        const usCountEl = document.getElementById('usHoldingsCount'); if (usCountEl) usCountEl.textContent = '0 positions';
     }
 
     // ── 2. INDIA SUMMARY — fetch all unique symbols in parallel ──
@@ -1500,10 +1905,13 @@ async function updateAllPortfolios() {
         // Add BINNY writeoff to invested cost → reduces Total P&L by ₹44,865. Never shown in table.
         updateSummary('india', fINR, indiaVal, indiaCost + INDIA_WRITEOFFS, indiaTodayPnL);
         document.getElementById('indiaTableWrap').innerHTML = indiaHtml;
+        const indiaCountEl = document.getElementById('indiaHoldingsCount');
+        if (indiaCountEl) indiaCountEl.textContent = `${indiaPositions.length} active position${indiaPositions.length === 1 ? '' : 's'}`;
     } else {
         // No positions configured yet — still show the writeoff
         updateSummary('india', fINR, 0, INDIA_WRITEOFFS, 0);
         document.getElementById('indiaTableWrap').innerHTML = '<div style="padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px;">No India positions — add some in Settings.</div>';
+        const indiaCountEl = document.getElementById('indiaHoldingsCount'); if (indiaCountEl) indiaCountEl.textContent = '0 active positions';
     }
 
     setDot(anyError ? 'warn' : 'ok');
@@ -1527,8 +1935,13 @@ async function updateAllPortfolios() {
         document.getElementById('lastUpdate').textContent =
             stale
                 ? `⚠ STALE · fetched ${feedText}`
-                : `Live ${feedText}`;
+                : `LIVE • ${feedText}`;
     }
+    // Refresh the selected performance views. History is cached for 5 minutes;
+    // the latest bar is always replaced with the current live portfolio value.
+    loadPerformance('us', performanceRange.us, false);
+    loadPerformance('india', performanceRange.india, false);
+
     updateTabTitle();
 }
 
