@@ -2625,7 +2625,7 @@ async function updateAllPortfolios() {
     if (usPositions.length > 0) {
         const prices = {}, prevCloses = {};
         const uniqueUS = [...new Set(usPositions.map(p => p.symbol))];
-        const needFetch = uniqueUS.filter(sym => usOpen || !lastPrices[sym]);
+        const needFetch = uniqueUS;
 
         // Fetch all symbols simultaneously — no sequential waiting
         await Promise.all(needFetch.map(async sym => {
@@ -2689,7 +2689,7 @@ async function updateAllPortfolios() {
     if (indiaPositions.length > 0) {
         const prices = {}, prevCloses = {};
         const uniqueIndia = [...new Set(indiaPositions.map(p => p.symbol))];
-        const needFetch = uniqueIndia.filter(sym => indiaOpen || !lastPrices[sym]);
+        const needFetch = uniqueIndia;
 
         await Promise.all(needFetch.map(async sym => {
             const r = await fetchPrice(sym, true);
