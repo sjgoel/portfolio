@@ -1,26 +1,26 @@
 {
-  "generated": "2026-09-29T07:34:11.556920+00:00",
+  "generated": "2026-09-29T14:19:37.563779+00:00",
   "quotes": {
     "GLDM": {
-      "prevClose": 84.89,
-      "price": 81.56,
-      "quoteUpdated": "2026-09-28T20:00:00+00:00",
+      "prevClose": 81.56,
+      "price": 82.4913,
+      "quoteUpdated": "2026-09-29T14:19:34+00:00",
       "source": "Yahoo",
       "sparkline": [
-        81.55,
-        81.58,
-        81.5801,
-        81.555,
-        81.55,
-        81.56
+        82.4193,
+        82.41,
+        82.425,
+        82.435,
+        82.4904,
+        82.4913
       ],
       "stale": false,
       "yahooSymbol": "GLDM"
     },
     "GOLDBEES": {
       "prevClose": 121.17,
-      "price": 120.8,
-      "quoteUpdated": "2026-09-29T07:34:11.556888+00:00",
+      "price": 120.64,
+      "quoteUpdated": "2026-09-29T14:19:37.563745+00:00",
       "source": "TradingView",
       "sparkline": [
         123.45,
@@ -34,21 +34,21 @@
       "yahooSymbol": "GOLDBEES.NS"
     },
     "SIVR": {
-      "prevClose": 61.14,
-      "price": 57.77,
-      "quoteUpdated": "2026-09-28T20:00:00+00:00",
+      "prevClose": 57.77,
+      "price": 58.15,
+      "quoteUpdated": "2026-09-29T14:19:16+00:00",
       "source": "Yahoo",
       "sparkline": [
-        57.73,
-        57.78,
-        57.785,
-        57.78,
-        57.785,
-        57.77
+        58.0551,
+        58.1062,
+        58.1,
+        58.055,
+        58.08,
+        58.15
       ],
       "stale": false,
       "yahooSymbol": "SIVR"
     }
   },
-  "updated": "2026-09-29T07:34:11.556918+00:00"
+  "updated": "2026-09-29T14:19:37.563775+00:00"
 }
