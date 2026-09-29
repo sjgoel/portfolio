@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-28T21:52:28.201934+00:00",
+  "generated": "2026-09-29T01:50:10.476499+00:00",
   "quotes": {
     "GLDM": {
       "prevClose": 84.89,
@@ -20,7 +20,7 @@
     "GOLDBEES": {
       "prevClose": 124.43,
       "price": 121.17,
-      "quoteUpdated": "2026-09-28T21:52:28.201891+00:00",
+      "quoteUpdated": "2026-09-29T01:50:10.476448+00:00",
       "source": "TradingView",
       "sparkline": [
         123.45,
@@ -50,5 +50,5 @@
       "yahooSymbol": "SIVR"
     }
   },
-  "updated": "2026-09-28T21:52:28.201931+00:00"
+  "updated": "2026-09-29T01:50:10.476494+00:00"
 }
